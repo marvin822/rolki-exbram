@@ -1,0 +1,83 @@
+[
+  {
+    "file": "26-07-10 12-37-05 5697.jpg",
+    "subject": "Zdjęcie prezentuje fragment realizacji ogrodzenia: kamienne słupki i metalowe panele z ażurowym motywem drzewa; w tle widoczny dom i niebo. Główny element to metalowe panele z wyciętym wzorem drzewa oraz przylegające słupki. Dla pionowego Reela lepsze jest delikatne przesunięcie w prawo (panRight) aby wyeksponować ozdobny panel i prowadzącą linię ogrodzenia; zoomIn mniej odpowiedni ponieważ obiekt leży bardziej po prawej stronie i warto ukazać kilka paneli w kontekście.",
+    "focusX": 70,
+    "focusY": 48,
+    "recommendedMotion": "panRight",
+    "motionStrength": 0.25,
+    "confidence": 0.9
+  },
+  {
+    "file": "26-07-10 12-37-15 5698.jpg",
+    "subject": "Ogrodzenie panelowe z metalowymi panelami dekoracyjnymi (motyw drzewa) na pierwszym planie przed nowoczesnym domem z dachem i panelami słonecznymi.",
+    "focusX": 50,
+    "focusY": 40,
+    "recommendedMotion": "zoomIn",
+    "motionStrength": 0.18,
+    "confidence": 0.9
+  },
+  {
+    "file": "26-07-10 12-37-18 5699.jpg",
+    "subject": "Panel ogrodzeniowy z ażurowym motywem drzewa przed murowaną podmurówką; w tle fragment domu i roślinność.",
+    "focusX": 50,
+    "focusY": 38,
+    "recommendedMotion": "zoomIn",
+    "motionStrength": 0.18,
+    "confidence": 0.9
+  },
+  {
+    "file": "26-07-10 12-37-20 5700.jpg",
+    "subject": "Panel ogrodzeniowy z metalowym, ażurowym motywem drzewa na pierwszym planie; w tle fragment domu i słupki kamienne.",
+    "focusX": 50,
+    "focusY": 42,
+    "recommendedMotion": "zoomIn",
+    "motionStrength": 0.18,
+    "confidence": 0.92
+  },
+  {
+    "file": "26-07-10 12-37-30 5701.jpg",
+    "subject": "Metalowe ogrodzenie/brama z dekoracyjnym wyciętym motywem drzewa na pierwszym planie, przed nowoczesnym domem jednorodzinnym z widocznym dachem i oknami.",
+    "focusX": 50,
+    "focusY": 42,
+    "recommendedMotion": "zoomIn",
+    "motionStrength": 0.22,
+    "confidence": 0.91
+  },
+  {
+    "file": "26-07-10 12-37-36 5702.jpg",
+    "subject": "Brama/dwuskrzydłowa furtka z metalową płytą ozdobną (wycięty motyw liści) osadzona między kamiennymi słupami przed domem",
+    "focusX": 50,
+    "focusY": 38,
+    "recommendedMotion": "zoomIn",
+    "motionStrength": 0.2,
+    "confidence": 0.9
+  },
+  {
+    "file": "26-07-10 12-38-00 5703.jpg",
+    "subject": "Balkon z metalową balustradą z motywem drzewa zamontowaną na elewacji; widoczne okno, fragment dachu i podpora balkonu.",
+    "focusX": 38,
+    "focusY": 33,
+    "recommendedMotion": "zoomIn",
+    "motionStrength": 0.18,
+    "confidence": 0.91
+  },
+  {
+    "file": "26-07-10 12-38-23 5704.jpg",
+    "subject": "Balkon z ozdobną metalową balustradą/płytą ażurową z motywem drzewa — realizacja firmy produkującej ogrodzenia/panele balkonowe.",
+    "focusX": 50,
+    "focusY": 30,
+    "recommendedMotion": "zoomIn",
+    "motionStrength": 0.2,
+    "confidence": 0.9
+  },
+  {
+    "file": "26-07-10 12-38-26 5705.jpg",
+    "subject": "balkon z metalową balustradą dekoracyjną (motyw drzewa), okno i zamknięta roleta",
+    "focusX": 50,
+    "focusY": 40,
+    "recommendedMotion": "zoomIn",
+    "motionStrength": 0.25,
+    "confidence": 0.9
+  }
+]

@@ -1,0 +1,40 @@
+{
+  "scenes": [
+    {
+      "file": "26-07-10 12-36-02 5696.mov",
+      "duration": 5,
+      "start": 11,
+      "reason": "Dynamiczne otwarcie: zbliżenie na centralny panel i przesunięcie kamery — użyj rekomendowanego startu 11s i 6s długości, daje ruch i detal."
+    },
+    {
+      "file": "26-07-10 12-37-15 5698.jpg",
+      "duration": 3,
+      "start": 0,
+      "reason": "Szeroki panel dekoracyjny przed nowoczesnym domem — kontekst realizacji; delikatne zoomIn, utrzymuje tempo."
+    },
+    {
+      "file": "26-07-10 12-37-20 5700.jpg",
+      "duration": 3,
+      "start": 0,
+      "reason": "Detal panela przy kamiennych słupkach — pokaz jakości wykonania; kontynuacja zbliżeń (zoomIn)."
+    },
+    {
+      "file": "26-07-10 12-38-23 5704.jpg",
+      "duration": 2.5,
+      "start": 0,
+      "reason": "Balustrada balkonowa z motywem drzewa — pokaz różnorodności produktów, krótki, czytelny kadr."
+    },
+    {
+      "file": "26-07-10 12-37-05 5697.jpg",
+      "duration": 3,
+      "start": 0,
+      "reason": "Ujęcie prowadzącej linii ogrodzenia — użyj panRight (motionStrength 0.25) dla pionowego Reela, ładne przejście miejsca."
+    },
+    {
+      "file": "26-07-10 12-37-30 5701.jpg",
+      "duration": 3.5,
+      "start": 0,
+      "reason": "Efektowna brama przed domem — mocne zakończenie prezentujące finalny wygląd realizacji."
+    }
+  ]
+}

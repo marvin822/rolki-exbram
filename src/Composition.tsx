@@ -1,25 +1,923 @@
-import { CalculateMetadataFunction, Composition } from "remotion";
+import {
+  AbsoluteFill,
+  Composition,
+  staticFile,
+  useCurrentFrame,
+  OffthreadVideo,
+  interpolate,
+  Easing,
+} from "remotion";
+import {
+  TransitionSeries,
+  linearTiming,
+} from "@remotion/transitions";
+import { fade } from "@remotion/transitions/fade";
+
+import editPlan from "../edit.json";
+import analysis from "../analysis.json";
+import videoAnalysis from "../video-analysis.json";
 
 type Props = {};
 
-const calculateMetadata: CalculateMetadataFunction<Props> = () => {
-  return {};
+type PhotoMotion =
+  | "zoomIn"
+  | "zoomOut"
+  | "panLeft"
+  | "panRight";
+
+type PhotoAnalysis = {
+  file: string;
+  subject: string;
+  focusX: number;
+  focusY: number;
+  recommendedMotion: PhotoMotion;
+  motionStrength: number;
+  confidence: number;
 };
 
-export const MyComposition = () => {
+type VideoAnalysis = {
+  file: string;
+  framing: "crop" | "fit";
+  focusX: number;
+  focusY: number;
+  confidence: number;
+};
+
+type EditScene = {
+  file: string;
+  duration: number;
+  start: number;
+  reason: string;
+};
+
+type EditPlan = {
+  scenes: EditScene[];
+};
+
+type Scene =
+  | {
+      type: "photo";
+      src: string;
+      duration: number;
+    }
+  | {
+      type: "video";
+      src: string;
+      originalFile: string;
+      duration: number;
+      start: number;
+    };
+
+const FPS = 30;
+
+const TRANSITION_DURATION = 15;
+
+const END_CARD_DURATION = 3;
+
+const PHOTO_SCALE = 1.15;
+const BASE_ZOOM = 0.08;
+const MAX_ZOOM = 0.12;
+
+const analysisData =
+  analysis as PhotoAnalysis[];
+
+const videoAnalysisData =
+  videoAnalysis as VideoAnalysis[];
+
+const editData =
+  editPlan as EditPlan;
+
+const durationInFrames = (
+  seconds: number,
+) => {
+  return Math.round(
+    seconds * FPS,
+  );
+};
+
+const clamp = (
+  value: number,
+  min: number,
+  max: number,
+) => {
+  return Math.min(
+    Math.max(value, min),
+    max,
+  );
+};
+
+const getAnalysisForImage = (
+  src: string,
+): PhotoAnalysis => {
+  const result =
+    analysisData.find(
+      (item) =>
+        item.file === src,
+    );
+
+  if (!result) {
+    return {
+      file: src,
+      subject: "",
+      focusX: 50,
+      focusY: 50,
+      recommendedMotion:
+        "zoomIn",
+      motionStrength: 0.5,
+      confidence: 0,
+    };
+  }
+
+  return result;
+};
+
+const getAnalysisForVideo = (
+  originalFile: string,
+): VideoAnalysis => {
+  const result =
+    videoAnalysisData.find(
+      (item) =>
+        item.file === originalFile,
+    );
+
+  if (!result) {
+    return {
+      file: originalFile,
+      framing: "crop",
+      focusX: 50,
+      focusY: 50,
+      confidence: 0,
+    };
+  }
+
+  return result;
+};
+
+const getProcessedVideoPath = (
+  src: string,
+) => {
+  const extensionIndex =
+    src.lastIndexOf(".");
+
+  if (extensionIndex === -1) {
+    return `processed/${src}.mp4`;
+  }
+
+  const baseName =
+    src.slice(
+      0,
+      extensionIndex,
+    );
+
+  return `processed/${baseName}.mp4`;
+};
+
+const scenes: Scene[] =
+  editData.scenes.map(
+    (scene) => {
+      const extension =
+        scene.file
+          .split(".")
+          .pop()
+          ?.toLowerCase();
+
+      const isVideo =
+        extension === "mp4" ||
+        extension === "mov" ||
+        extension === "webm";
+
+      if (isVideo) {
+        return {
+          type: "video",
+          src:
+            getProcessedVideoPath(
+              scene.file,
+            ),
+          originalFile:
+            scene.file,
+          duration:
+            scene.duration,
+          start:
+            scene.start,
+        };
+      }
+
+      return {
+        type: "photo",
+        src: `media/photos/${scene.file}`,
+        duration:
+          scene.duration,
+      };
+    },
+  );
+
+/*
+ * TransitionSeries nakłada przejścia
+ * pomiędzy scenami.
+ *
+ * Każda scena poza ostatnią dostaje
+ * dodatkowe 15 klatek, które są następnie
+ * kompensowane przez przejście.
+ *
+ * Dzięki temu rzeczywisty czas całej
+ * części materiałowej odpowiada sumie
+ * czasów podanych przez AI.
+ */
+const getSequenceDurationInFrames = (
+  duration: number,
+  hasNextScene: boolean,
+) => {
   return (
-    <Composition
-      id="MyComp"
-      component={MyComponent}
-      durationInFrames={60}
-      fps={30}
-      width={1280}
-      height={720}
-      calculateMetadata={calculateMetadata}
+    durationInFrames(
+      duration,
+    ) +
+    (hasNextScene
+      ? TRANSITION_DURATION
+      : 0)
+  );
+};
+
+const getMediaDurationInFrames =
+  () => {
+    return scenes.reduce(
+      (
+        total,
+        scene,
+      ) =>
+        total +
+        durationInFrames(
+          scene.duration,
+        ),
+      0,
+    );
+  };
+
+const getTotalDurationInFrames =
+  () => {
+    return (
+      getMediaDurationInFrames() +
+      durationInFrames(
+        END_CARD_DURATION,
+      ) +
+      2
+    );
+  };
+
+export const MyComposition =
+  () => {
+    return (
+      <Composition
+        id="MyComp"
+        component={
+          MyComponent
+        }
+        durationInFrames={
+          getTotalDurationInFrames()
+        }
+        fps={FPS}
+        width={1080}
+        height={1920}
+      />
+    );
+  };
+
+const getSafePanAmount = (
+  scale: number,
+) => {
+  const geometricLimit =
+    ((scale - 1) /
+      (2 * scale)) *
+    100;
+
+  return (
+    geometricLimit * 0.85
+  );
+};
+
+const PhotoScene: React.FC<{
+  src: string;
+  duration: number;
+}> = ({
+  src,
+  duration,
+}) => {
+  const frame =
+    useCurrentFrame();
+
+  const imageAnalysis =
+    getAnalysisForImage(
+      src,
+    );
+
+  const motion =
+    imageAnalysis.recommendedMotion;
+
+  const motionStrength =
+    clamp(
+      imageAnalysis.motionStrength,
+      0,
+      1,
+    );
+
+  /*
+   * Ruch zdjęcia trwa przez właściwy czas
+   * zdjęcia + czas przejścia.
+   *
+   * Dzięki temu ruch nie zatrzymuje się
+   * przed rozpoczęciem fade.
+   */
+  const animationFrames =
+    durationInFrames(
+      duration,
+    ) +
+    TRANSITION_DURATION;
+
+  const progress =
+    animationFrames <= 1
+      ? 1
+      : Math.min(
+          frame /
+            (animationFrames - 1),
+          1,
+        );
+
+  let scale = 1;
+  let translateX = 0;
+
+  switch (motion) {
+    case "zoomIn": {
+      const zoomAmount =
+        Math.min(
+          BASE_ZOOM *
+            (1 +
+              motionStrength *
+                0.5),
+          MAX_ZOOM,
+        );
+
+      scale =
+        1 +
+        zoomAmount *
+          progress;
+
+      break;
+    }
+
+    case "zoomOut": {
+      const zoomAmount =
+        Math.min(
+          BASE_ZOOM *
+            (1 +
+              motionStrength *
+                0.5),
+          MAX_ZOOM,
+        );
+
+      scale =
+        1.08 -
+        zoomAmount *
+          progress;
+
+      break;
+    }
+
+    case "panLeft": {
+      scale =
+        PHOTO_SCALE;
+
+      const safePan =
+        getSafePanAmount(
+          scale,
+        );
+
+      const requestedPan =
+        safePan *
+        (0.85 +
+          motionStrength *
+            0.15);
+
+      const pan =
+        Math.min(
+          requestedPan,
+          safePan,
+        );
+
+      translateX =
+        progress * -pan;
+
+      break;
+    }
+
+    case "panRight": {
+      scale =
+        PHOTO_SCALE;
+
+      const safePan =
+        getSafePanAmount(
+          scale,
+        );
+
+      const requestedPan =
+        safePan *
+        (0.85 +
+          motionStrength *
+            0.15);
+
+      const pan =
+        Math.min(
+          requestedPan,
+          safePan,
+        );
+
+      translateX =
+        progress * pan;
+
+      break;
+    }
+  }
+
+  return (
+    <AbsoluteFill
+      style={{
+        overflow:
+          "hidden",
+      }}
+    >
+      <img
+        src={staticFile(src)}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit:
+            "cover",
+          transform: `
+            translateX(${translateX}%)
+            scale(${scale})
+          `,
+          transformOrigin:
+            "center center",
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+const VideoScene: React.FC<{
+  src: string;
+  originalFile: string;
+  start: number;
+  duration: number;
+}> = ({
+  src,
+  originalFile,
+  start,
+  duration,
+}) => {
+  const videoAnalysis =
+    getAnalysisForVideo(
+      originalFile,
+    );
+
+  const framing =
+    videoAnalysis.framing;
+
+  const focusX =
+    clamp(
+      videoAnalysis.focusX,
+      0,
+      100,
+    );
+
+  const focusY =
+    clamp(
+      videoAnalysis.focusY,
+      0,
+      100,
+    );
+
+  const objectFit =
+    framing === "fit"
+      ? "contain"
+      : "cover";
+
+  const objectPosition =
+    `${focusX}% ${focusY}%`;
+
+  /*
+   * Film jest odtwarzany dokładnie przez
+   * czas wybrany przez AI.
+   *
+   * Podczas przejścia ostatnia klatka
+   * zostaje chwilowo utrzymana.
+   */
+  const videoFrames =
+    durationInFrames(
+      duration,
+    );
+
+  const frame =
+    useCurrentFrame();
+
+  const clampedFrame =
+    Math.min(
+      frame,
+      videoFrames - 1,
+    );
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor:
+          "black",
+      }}
+    >
+      <OffthreadVideo
+        src={staticFile(src)}
+        startFrom={
+          Math.round(
+            start * FPS,
+          ) +
+          clampedFrame
+        }
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit,
+          objectPosition,
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+const SceneComponent: React.FC<{
+  scene: Scene;
+}> = ({
+  scene,
+}) => {
+  if (
+    scene.type === "photo"
+  ) {
+    return (
+      <PhotoScene
+        src={scene.src}
+        duration={
+          scene.duration
+        }
+      />
+    );
+  }
+
+  return (
+    <VideoScene
+      src={scene.src}
+      originalFile={
+        scene.originalFile
+      }
+      start={
+        scene.start
+      }
+      duration={
+        scene.duration
+      }
     />
   );
 };
 
-export const MyComponent: React.FC<Props> = () => {
-  return null;
+const EndCard: React.FC<{
+  frame: number;
+}> = ({
+  frame,
+}) => {
+  /*
+   * frame jest lokalny dla EndCard.
+   * Zawsze zaczyna od 0 niezależnie od
+   * długości całej rolki.
+   */
+
+  const logoOpacity =
+    interpolate(
+      frame,
+      [0, 15],
+      [0, 1],
+      {
+        extrapolateLeft:
+          "clamp",
+        extrapolateRight:
+          "clamp",
+        easing:
+          Easing.out(
+            Easing.cubic,
+          ),
+      },
+    );
+
+  const taglineOpacity =
+    interpolate(
+      frame,
+      [18, 35],
+      [0, 1],
+      {
+        extrapolateLeft:
+          "clamp",
+        extrapolateRight:
+          "clamp",
+      },
+    );
+
+  const taglineY =
+    interpolate(
+      frame,
+      [18, 35],
+      [20, 0],
+      {
+        extrapolateLeft:
+          "clamp",
+        extrapolateRight:
+          "clamp",
+        easing:
+          Easing.out(
+            Easing.cubic,
+          ),
+      },
+    );
+
+  const websiteOpacity =
+    interpolate(
+      frame,
+      [38, 52],
+      [0, 1],
+      {
+        extrapolateLeft:
+          "clamp",
+        extrapolateRight:
+          "clamp",
+      },
+    );
+
+  const websiteY =
+    interpolate(
+      frame,
+      [38, 52],
+      [15, 0],
+      {
+        extrapolateLeft:
+          "clamp",
+        extrapolateRight:
+          "clamp",
+        easing:
+          Easing.out(
+            Easing.cubic,
+          ),
+      },
+    );
+
+  const lineWidth =
+    interpolate(
+      frame,
+      [34, 50],
+      [0, 240],
+      {
+        extrapolateLeft:
+          "clamp",
+        extrapolateRight:
+          "clamp",
+        easing:
+          Easing.out(
+            Easing.cubic,
+          ),
+      },
+    );
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor:
+          "#f2f0eb",
+        alignItems:
+          "center",
+        justifyContent:
+          "center",
+        overflow:
+          "hidden",
+      }}
+    >
+      <div
+        style={{
+          position:
+            "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(circle at 50% 35%, rgba(255,255,255,0.9), rgba(242,240,235,0) 55%)",
+        }}
+      />
+
+      <div
+        style={{
+          position:
+            "absolute",
+          top: "30%",
+          left: "50%",
+          transform:
+            "translate(-50%, -50%)",
+          opacity:
+            logoOpacity,
+          width: 780,
+          display:
+            "flex",
+          justifyContent:
+            "center",
+          alignItems:
+            "center",
+        }}
+      >
+        <img
+          src={staticFile(
+            "others/logo_duze_bez_tla.png",
+          )}
+          style={{
+            width: "100%",
+            height: "auto",
+            display:
+              "block",
+          }}
+        />
+      </div>
+
+      <div
+        style={{
+          position:
+            "absolute",
+          top: "53%",
+          left: "50%",
+          transform:
+            `translate(-50%, ${taglineY}px)`,
+          opacity:
+            taglineOpacity,
+          width:
+            "90%",
+          textAlign:
+            "center",
+          color:
+            "#1c1c1c",
+          fontFamily:
+            "Arial, Helvetica, sans-serif",
+          fontSize:
+            48,
+          fontWeight:
+            400,
+          letterSpacing:
+            1.2,
+        }}
+      >
+        Ogrodzenia,
+        <br />
+        które robią różnicę
+      </div>
+
+      <div
+        style={{
+          position:
+            "absolute",
+          top: "67%",
+          left: "50%",
+          transform:
+            "translateX(-50%)",
+          width:
+            lineWidth,
+          height: 2,
+          backgroundColor:
+            "#b99a5b",
+          opacity:
+            websiteOpacity,
+        }}
+      />
+
+      <div
+        style={{
+          position:
+            "absolute",
+          top: "71%",
+          left: "50%",
+          transform:
+            `translate(-50%, ${websiteY}px)`,
+          opacity:
+            websiteOpacity,
+          color:
+            "#1c1c1c",
+          fontFamily:
+            "Arial, Helvetica, sans-serif",
+          fontSize:
+            42,
+          fontWeight:
+            400,
+          letterSpacing:
+            3,
+          whiteSpace:
+            "nowrap",
+        }}
+      >
+        www.exbram.pl
+      </div>
+    </AbsoluteFill>
+  );
 };
+
+export const MyComponent: React.FC<Props> =
+  () => {
+    const frame =
+      useCurrentFrame();
+
+    const mediaDuration =
+      getMediaDurationInFrames();
+
+    /*
+     * KLUCZOWA ZMIANA
+     *
+     * W danym momencie renderujemy wyłącznie
+     * jedną z dwóch rzeczy:
+     *
+     * 1. część materiałową
+     * 2. EndCard
+     *
+     * Nie ma żadnego Sequence nakładającego
+     * planszę na TransitionSeries.
+     */
+    if (
+      frame >= mediaDuration
+    ) {
+      const endCardFrame =
+        frame -
+        mediaDuration;
+
+      return (
+        <AbsoluteFill
+          style={{
+            backgroundColor:
+              "#f2f0eb",
+          }}
+        >
+          <EndCard
+            frame={
+              endCardFrame
+            }
+          />
+        </AbsoluteFill>
+      );
+    }
+
+    return (
+      <AbsoluteFill
+        style={{
+          backgroundColor:
+            "black",
+        }}
+      >
+        <TransitionSeries>
+          {scenes.map(
+            (
+              scene,
+              index,
+            ) => {
+              const hasNextScene =
+                index <
+                scenes.length - 1;
+
+              return (
+                <React.Fragment
+                  key={`${scene.src}-${index}`}
+                >
+                  <TransitionSeries.Sequence
+                    durationInFrames={getSequenceDurationInFrames(
+                      scene.duration,
+                      hasNextScene,
+                    )}
+                  >
+                    <SceneComponent
+                      scene={
+                        scene
+                      }
+                    />
+                  </TransitionSeries.Sequence>
+
+                  {hasNextScene && (
+                    <TransitionSeries.Transition
+                      timing={linearTiming(
+                        {
+                          durationInFrames:
+                            TRANSITION_DURATION,
+                        },
+                      )}
+                      presentation={
+                        fade()
+                      }
+                    />
+                  )}
+                </React.Fragment>
+              );
+            },
+          )}
+        </TransitionSeries>
+      </AbsoluteFill>
+    );
+  };

@@ -1,0 +1,16 @@
+[
+  {
+    "file": "26-07-10 12-36-02 5696.mov",
+    "subject": "ogrodzenie z ażurowymi panelami metalowymi (motyw drzewa) i filary kamienne",
+    "qualityScore": 0.75,
+    "usable": true,
+    "startDescription": "zbliżenie na centralny panel ażurowy z wyciętym motywem drzewa; panel jest czytelny, mało rozpraszających elementów w kadrze",
+    "endDescription": "przejście kamery wzdłuż panelu pokazujące detale wycięcia i połączenie panelu z filarem kamiennym",
+    "recommendedStart": 11,
+    "recommendedDuration": 6,
+    "framing": "crop",
+    "focusX": 54,
+    "focusY": 40,
+    "confidence": 0.86
+  }
+]
