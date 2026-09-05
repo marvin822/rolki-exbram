@@ -1,8 +1,10 @@
+import React from "react";
 import {
   AbsoluteFill,
   Composition,
   staticFile,
   useCurrentFrame,
+  Img,
   OffthreadVideo,
   interpolate,
   Easing,
@@ -443,7 +445,7 @@ const PhotoScene: React.FC<{
           "hidden",
       }}
     >
-      <img
+      <Img
         src={staticFile(src)}
         style={{
           width: "100%",
@@ -731,7 +733,7 @@ const EndCard: React.FC<{
             "center",
         }}
       >
-        <img
+        <Img
           src={staticFile(
             "others/logo_duze_bez_tla.png",
           )}

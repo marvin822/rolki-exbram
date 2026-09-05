@@ -12,6 +12,8 @@ const supportedVideoExtensions = [
   ".webm",
 ];
 
+const FFMPEG_TIMEOUT_MS = 10 * 60 * 1000;
+
 if (!fs.existsSync(publicDir)) {
   console.error(
     `Nie znaleziono katalogu: ${publicDir}`,
@@ -28,97 +30,20 @@ if (!fs.existsSync(videosDir)) {
   process.exit(1);
 }
 
+/*
+ * Czyścimy stary katalog processed.
+ *
+ * Dzięki temu w public/processed znajdują się wyłącznie
+ * filmy odpowiadające aktualnej zawartości public/media/videos.
+ */
+fs.rmSync(processedDir, {
+  recursive: true,
+  force: true,
+});
+
 fs.mkdirSync(processedDir, {
   recursive: true,
 });
-
-const getRotation = (filePath) => {
-  const result = spawnSync(
-    "ffprobe",
-    [
-      "-v",
-      "quiet",
-      "-print_format",
-      "json",
-      "-show_streams",
-      filePath,
-    ],
-    {
-      encoding: "utf8",
-    },
-  );
-
-  if (result.status !== 0) {
-    throw new Error(
-      `Nie udało się odczytać metadanych: ${filePath}`,
-    );
-  }
-
-  const data = JSON.parse(
-    result.stdout,
-  );
-
-  const stream =
-    data.streams?.find(
-      (item) =>
-        item.codec_type ===
-        "video",
-    );
-
-  if (!stream) {
-    return 0;
-  }
-
-  const sideDataRotation =
-    stream.side_data_list?.find(
-      (item) =>
-        typeof item.rotation ===
-        "number",
-    )?.rotation;
-
-  if (
-    typeof sideDataRotation ===
-    "number"
-  ) {
-    return sideDataRotation;
-  }
-
-  const tagRotation = Number(
-    stream.tags?.rotate,
-  );
-
-  if (
-    Number.isFinite(
-      tagRotation,
-    )
-  ) {
-    return tagRotation;
-  }
-
-  return 0;
-};
-
-const getTransposeFilter = (
-  rotation,
-) => {
-  const normalized =
-    ((rotation % 360) + 360) % 360;
-
-  switch (normalized) {
-    case 90:
-      return "transpose=2";
-
-    case 180:
-      return "transpose=2,transpose=2";
-
-    case 270:
-      return "transpose=1";
-
-    case 0:
-    default:
-      return null;
-  }
-};
 
 const videoFiles = fs
   .readdirSync(videosDir, {
@@ -194,70 +119,25 @@ for (const file of videoFiles) {
     `\nPrzetwarzam: ${file}`,
   );
 
-  let rotation;
-
-  try {
-    rotation =
-      getRotation(
-        inputPath,
-      );
-  } catch (error) {
-    console.error(
-      `Nie udało się odczytać rotacji: ${error.message}`,
-    );
-
-    process.exit(1);
-  }
-
-  console.log(
-    `Wykryta rotacja: ${rotation}°`,
-  );
-
-  const transpose =
-    getTransposeFilter(
-      rotation,
-    );
-
-  console.log(
-    `Transformacja: ${
-      transpose ?? "brak"
-    }`,
-  );
-
-  const filters = [];
-
-  if (transpose) {
-    filters.push(
-      transpose,
-    );
-  }
-
-  filters.push(
-    "scale=1920:1920:force_original_aspect_ratio=decrease",
-  );
-
-  filters.push(
-    "format=nv12",
-  );
-
-  filters.push(
-    "hwupload_cuda",
-  );
-
+  /*
+   * Dekodowanie programowe + enkoder GPU (h264_nvenc).
+   *
+   * Wcześniejszy wariant z pełnym potokiem CUDA
+   * (-hwaccel cuda + hwdownload/hwupload_cuda) potrafił
+   * zawieszać się na 0 klatkach przy materiale HEVC 4K60
+   * z iPhone'a. Programowy dekoder jest wolniejszy, ale
+   * pewny, a enkoder pozostaje na GPU.
+   *
+   * Obrót jest zdejmowany automatycznie z metadanych
+   * (display matrix), więc nie liczymy transpose ręcznie.
+   */
   const filterGraph = [
-    "hwdownload",
-    "format=nv12",
-    ...filters,
+    "scale=1920:1920:force_original_aspect_ratio=decrease",
+    "format=yuv420p",
   ].join(",");
 
   const args = [
     "-y",
-
-    "-hwaccel",
-    "cuda",
-
-    "-hwaccel_output_format",
-    "cuda",
 
     "-i",
     inputPath,
@@ -269,13 +149,25 @@ for (const file of videoFiles) {
     "h264_nvenc",
 
     "-preset",
-    "p4",
+    "p5",
+
+    "-b:v",
+    "8M",
+
+    "-maxrate",
+    "12M",
+
+    "-bufsize",
+    "16M",
 
     "-r",
     "30",
 
     "-c:a",
     "aac",
+
+    "-b:a",
+    "128k",
 
     outputPath,
   ];
@@ -285,8 +177,18 @@ for (const file of videoFiles) {
     args,
     {
       stdio: "inherit",
+      timeout: FFMPEG_TIMEOUT_MS,
+      killSignal: "SIGKILL",
     },
   );
+
+  if (result.error) {
+    console.error(
+      `Błąd podczas przetwarzania ${file}: ${result.error.message}`,
+    );
+
+    process.exit(1);
+  }
 
   if (result.status !== 0) {
     console.error(
