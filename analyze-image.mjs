@@ -496,9 +496,10 @@ ${JSON.stringify(
 
 CEL DŁUGOŚCI:
 
-- cała rolka ma trwać 20-25 sekund; plansza końcowa to około 3 sekundy,
-  więc materiał przed planszą to około 18-22 sekundy,
-- preferuj 6-8 scen (średnie ujęcie ok. 3-3.5 s, żeby wyjść na 18-22 s),
+- cała rolka ma trwać 20-23 sekundy i NIGDY więcej niż 25 sekund;
+  plansza końcowa to około 3 sekundy, więc materiał przed planszą
+  to około 17-20 sekund,
+- preferuj 6-8 scen (średnie ujęcie ok. 3-3.5 s, żeby wyjść na 17-20 s),
 - jeśli dostępnych jest wystarczająco dużo dobrych materiałów, wykorzystaj 6-8 różnych materiałów,
 - ujęcia mają być trochę dłuższe i spokojniejsze — daj widzowi obejrzeć kadr,
 - nie skracaj rolki tylko dlatego, że można użyć mniejszej liczby scen,
@@ -518,7 +519,7 @@ KOMPOZYCJA:
 ZDJĘCIA:
 
 - zwykle 3-4 sekundy,
-- bardzo mocne zdjęcie może trwać około 4.5-5 sekund,
+- bardzo mocne zdjęcie może trwać około 4-4.5 sekundy,
 - słabszego zdjęcia nie wydłużaj (zostaw około 3 sekund).
 
 FILMY:
@@ -558,8 +559,8 @@ WAŻNE:
 13. duration podawaj w sekundach.
 14. Dla zdjęć wybieraj zwykle 3-4 sekundy.
 15. Preferuj 6-8 scen, jeżeli materiał na to pozwala.
-16. Całość materiału przed planszą końcową powinna być zwykle blisko 18-22 sekund (cała rolka 20-25 s).
-17. Jeśli do osiągnięcia 18-22 sekund potrzebny jest dodatkowy dobry materiał, wybierz go.
+16. Całość materiału przed planszą końcową powinna być zwykle blisko 17-20 sekund (cała rolka 20-23 s, max 25 s).
+17. Jeśli do osiągnięcia 17-20 sekund potrzebny jest dodatkowy dobry materiał, wybierz go.
 18. Jeśli dodatkowy materiał jest wyraźnie słaby, pomiń go zamiast sztucznie wydłużać rolkę.
 
 Zwróć wyłącznie JSON zgodny ze schematem.
@@ -701,7 +702,7 @@ Zwróć wyłącznie JSON zgodny ze schematem.
 
         duration:
           Math.min(
-            5,
+            4.5,
             Math.max(
               2.5,
               Number(
@@ -745,7 +746,7 @@ Zwróć wyłącznie JSON zgodny ze schematem.
 
       duration:
         Math.min(
-          6,
+          5,
           Math.max(
             2,
             duration,

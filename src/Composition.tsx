@@ -100,11 +100,11 @@ const MUSIC_VOLUME = 0.25;
 
 const MUSIC_FADE_FRAMES = 18;
 
-// Dłuższe ujęcia (rolka 20-25 s) — nieco większy ruch,
-// żeby dłuższy kadr nie wydawał się zamrożony.
+// Ruch zdjęć. Dystans skaluje się z długością ujęcia
+// (durationFactor w PhotoScene), MAX_ZOOM to twardy sufit.
 const PHOTO_SCALE = 1.18;
 const BASE_ZOOM = 0.1;
-const MAX_ZOOM = 0.16;
+const MAX_ZOOM = 0.2;
 
 const analysisData =
   analysis as PhotoAnalysis[];
@@ -402,20 +402,36 @@ const PhotoScene: React.FC<{
     ? "center center"
     : `${focusX}% ${focusY}%`;
 
+  /*
+   * P3: dłuższe ujęcie dostaje większy dystans ruchu, żeby
+   * dłuższe przytrzymanie kadru nie wyglądało na zamrożone.
+   * 3 s ≈ ruch bazowy, ~4.5 s ≈ 1.5× dystansu.
+   */
+  const durationFactor =
+    clamp(
+      durationInFrames(
+        duration,
+      ) /
+        durationInFrames(3),
+      0.9,
+      1.6,
+    );
+
+  const zoomAmount =
+    Math.min(
+      BASE_ZOOM *
+        (1 +
+          motionStrength *
+            0.5) *
+        durationFactor,
+      MAX_ZOOM,
+    );
+
   let scale = 1;
   let translateX = 0;
 
   switch (motion) {
     case "zoomIn": {
-      const zoomAmount =
-        Math.min(
-          BASE_ZOOM *
-            (1 +
-              motionStrength *
-                0.5),
-          MAX_ZOOM,
-        );
-
       scale =
         1 +
         zoomAmount *
@@ -425,19 +441,15 @@ const PhotoScene: React.FC<{
     }
 
     case "zoomOut": {
-      const zoomAmount =
-        Math.min(
-          BASE_ZOOM *
-            (1 +
-              motionStrength *
-                0.5),
-          MAX_ZOOM,
-        );
-
+      /*
+       * Start od 1 + zoomAmount, koniec dokładnie na 1 —
+       * skala nigdy nie spada poniżej 1, więc nie odsłania
+       * czarnych krawędzi.
+       */
       scale =
-        1.08 -
+        1 +
         zoomAmount *
-          progress;
+          (1 - progress);
 
       break;
     }
@@ -455,7 +467,8 @@ const PhotoScene: React.FC<{
         safePan *
         (0.85 +
           motionStrength *
-            0.15);
+            0.15) *
+        durationFactor;
 
       const pan =
         Math.min(
@@ -482,7 +495,8 @@ const PhotoScene: React.FC<{
         safePan *
         (0.85 +
           motionStrength *
-            0.15);
+            0.15) *
+        durationFactor;
 
       const pan =
         Math.min(
