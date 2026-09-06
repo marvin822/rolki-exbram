@@ -19,8 +19,13 @@ const VIDEO_ANALYSIS_FILE = path.join(
   "video-analysis.json",
 );
 
-const OUTPUT_FILE = path.join(
+const OUTPUT_DIR = path.join(
   CWD,
+  "output",
+);
+
+const OUTPUT_FILE = path.join(
+  OUTPUT_DIR,
   "opis.txt",
 );
 
@@ -430,6 +435,10 @@ const main = async () => {
     buildHashtagLine(
       result.hashtags,
     );
+
+  fs.mkdirSync(OUTPUT_DIR, {
+    recursive: true,
+  });
 
   const fileContent = [
     description,

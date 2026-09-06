@@ -273,6 +273,6 @@ if (!skipDescription) {
   );
 
   console.log(
-    "./opis.txt",
+    "./output/opis.txt",
   );
 }
