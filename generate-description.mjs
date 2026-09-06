@@ -25,23 +25,24 @@ const OUTPUT_FILE = path.join(
 );
 
 /*
- * Stała stopka doklejana ZAWSZE na końcu opisu,
- * niezależnie od tego, co zwróci model.
+ * Elementy doklejane ZAWSZE, niezależnie od tego, co zwróci model:
+ * jedno wezwanie do działania, dane kontaktowe i hasztagi marki.
  */
+const CTA_LINE =
+  "Planujesz ogrodzenie? Napisz do nas — przygotujemy rozwiązanie dopasowane do Twojej posesji.";
+
 const CONTACT_LINES = [
   "www.exbram.pl",
   "biuro@exbram.pl",
   "502 492 009",
 ];
 
-/*
- * Hasztagi marki, które zawsze mają się znaleźć w opisie.
- * Model dokłada do nich hasztagi związane z treścią ujęć.
- */
 const BASE_HASHTAGS = [
-  "exbram",
   "ogrodzenia",
+  "EXBRAM",
 ];
+
+const MAX_HASHTAGS = 7;
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -154,8 +155,7 @@ const normalizeHashtag = (tag) => {
     .replace(
       /[^\p{L}\p{N}_]/gu,
       "",
-    )
-    .toLowerCase();
+    );
 
   return cleaned
     ? `#${cleaned}`
@@ -192,7 +192,7 @@ const buildHashtagLine = (
   }
 
   return unique
-    .slice(0, 15)
+    .slice(0, MAX_HASHTAGS)
     .join(" ");
 };
 
@@ -212,8 +212,8 @@ const generateDescription =
                   type: "input_text",
 
                   text: `
-Jesteś copywriterem marketingowym firmy EXBRAM — producenta nowoczesnych
-i klasycznych ogrodzeń, bram, furtek oraz balustrad.
+Jesteś copywriterem marketingowym firmy EXBRAM — producenta ogrodzeń,
+bram, furtek oraz balustrad.
 
 Na podstawie listy ujęć z krótkiej rolki (Reel) napisz opis, który klient
 wrzuci pod rolką na Facebooku i Instagramie.
@@ -225,24 +225,37 @@ ${JSON.stringify(
   2,
 )}
 
-ZASADY OPISU:
-- język polski,
-- 2-4 krótkie zdania,
-- ton marketingowy, ale naturalny i przystępny — bez clickbaitu,
-  bez wielkich obietnic, bez nadmiaru wykrzykników,
-- opisz krótko, co widać w materiale (rodzaj ogrodzenia, brama, furtka,
-  panele, balustrada, motyw zdobienia, kontekst realizacji),
-- możesz delikatnie zachęcić do kontaktu, ale NIE podawaj w tym polu
-  adresu strony, e-maila ani telefonu — dane kontaktowe dokleimy osobno,
-- NIE dodawaj hasztagów w polu description,
-- nie wymyślaj szczegółów, których nie ma na liście ujęć.
+Pole "description" ma zawierać DOKŁADNIE trzy części, jedna po drugiej,
+każda jako osobny akapit oddzielony pustą linią:
 
-HASZTAGI:
-- zwróć 8-12 hasztagów po polsku,
+1. HOOK — jedno zdanie, które zatrzymuje uwagę i mówi, co widzimy.
+   Wzór: "Kolejna realizacja EXBRAM — tym razem <co to jest>."
+   Dopasuj końcówkę do materiału (np. nowoczesne ogrodzenie posesji,
+   ogrodzenie z ażurowym panelem, brama z automatyką).
+
+2. KONKRETY REALIZACJI — 1-3 zdania. Wyciągnij z analizy konkretne cechy:
+   - rodzaj ogrodzenia (np. panelowe, ażurowe, poziome, nowoczesne),
+   - kolor (np. antracyt, czarny) — tylko jeśli wynika z analizy,
+   - materiał (np. stal, aluminium, blacha) — tylko jeśli wynika z analizy,
+   - rodzaj bramy / furtki (np. dwuskrzydłowa, przesuwna) — jeśli występuje,
+   - charakterystyczne rozwiązania (np. wycinany motyw drzewa, kamienne
+     słupki, podmurówka, spójna balustrada w tym samym wzorze).
+   Podawaj wyłącznie to, co potwierdza analiza. Nie zgaduj.
+
+3. KORZYŚĆ / EFEKT — jedno zdanie o tym, co ta realizacja daje właścicielowi
+   posesji (forma, spójny wygląd, prywatność, zabezpieczenie, trwałość,
+   dopasowanie do bryły domu). Nie "wykonaliśmy ogrodzenie", tylko efekt.
+
+W polu "description" NIE dodawaj: wezwania do działania (CTA), adresu strony,
+e-maila, telefonu ani hasztagów — dokleimy je osobno.
+
+Język polski, ton naturalny i konkretny, bez clickbaitu i bez wykrzykników.
+
+HASZTAGI (pole "hashtags"):
+- zwróć 3-6 hasztagów sensownych dla tej realizacji
+  (np. ogrodzenie, brama, posesja, producentogrodzeń, nowoczesneogrodzenie),
 - bez znaku #, bez spacji w środku,
-- połącz hasztagi marki i branży (np. ogrodzenia, brama, furtka, panele,
-  kowalstwo, realizacja) z hasztagami wynikającymi z treści ujęć,
-- małe litery.
+- #ogrodzenia i #EXBRAM są dokładane automatycznie, więc ich nie podawaj.
 
 Zwróć wyłącznie JSON zgodny ze schematem.
                 `,
@@ -272,9 +285,9 @@ Zwróć wyłącznie JSON zgodny ze schematem.
                   hashtags: {
                     type: "array",
 
-                    minItems: 5,
+                    minItems: 3,
 
-                    maxItems: 15,
+                    maxItems: 8,
 
                     items: {
                       type: "string",
@@ -410,6 +423,8 @@ const main = async () => {
 
   const fileContent = [
     description,
+    "",
+    CTA_LINE,
     "",
     ...CONTACT_LINES,
     "",
