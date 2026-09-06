@@ -14,6 +14,31 @@ const skipDescription =
     "--bez-opisu",
   );
 
+const pad = (value) =>
+  String(value).padStart(
+    2,
+    "0",
+  );
+
+/*
+ * Znacznik daty i godziny do nazw plików wyjściowych,
+ * np. 2026-09-06_14-05-32. Ta sama wartość trafia do
+ * nazwy rolki i opisu w danym przebiegu, dzięki czemu
+ * kolejne przebiegi nie nadpisują poprzednich.
+ */
+const buildStamp = (
+  date = new Date(),
+) => {
+  return (
+    `${date.getFullYear()}-` +
+    `${pad(date.getMonth() + 1)}-` +
+    `${pad(date.getDate())}_` +
+    `${pad(date.getHours())}-` +
+    `${pad(date.getMinutes())}-` +
+    `${pad(date.getSeconds())}`
+  );
+};
+
 const steps = [
   {
     name: "Wyciąganie klatek z filmów",
@@ -184,13 +209,21 @@ fs.mkdirSync(
   },
 );
 
+const stamp = buildStamp();
+
+const reelPath =
+  `./output/reel-${stamp}.mp4`;
+
+const descriptionPath =
+  `./output/opis-${stamp}.txt`;
+
 const renderResult = spawnSync(
   "npx",
   [
     "remotion",
     "render",
     "MyComp",
-    "./output/reel.mp4",
+    reelPath,
   ],
   {
     stdio: "inherit",
@@ -230,6 +263,10 @@ if (!skipDescription) {
       {
         stdio: "inherit",
         shell: true,
+        env: {
+          ...process.env,
+          REEL_STAMP: stamp,
+        },
       },
     );
 
@@ -263,9 +300,7 @@ console.log(
   "\nGotowa rolka:",
 );
 
-console.log(
-  "./output/reel.mp4",
-);
+console.log(reelPath);
 
 if (!skipDescription) {
   console.log(
@@ -273,6 +308,6 @@ if (!skipDescription) {
   );
 
   console.log(
-    "./output/opis.txt",
+    descriptionPath,
   );
 }

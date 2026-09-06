@@ -24,9 +24,38 @@ const OUTPUT_DIR = path.join(
   "output",
 );
 
+const pad = (value) =>
+  String(value).padStart(
+    2,
+    "0",
+  );
+
+/*
+ * Znacznik daty i godziny w nazwie pliku, np. 2026-09-06_14-05-32.
+ * W pełnym pipeline make-reel.mjs przekazuje ten sam znacznik przez
+ * REEL_STAMP, żeby opis miał identyczną nazwę jak rolka. Uruchomiony
+ * samodzielnie skrypt wylicza znacznik z bieżącego czasu.
+ */
+const buildStamp = (
+  date = new Date(),
+) => {
+  return (
+    `${date.getFullYear()}-` +
+    `${pad(date.getMonth() + 1)}-` +
+    `${pad(date.getDate())}_` +
+    `${pad(date.getHours())}-` +
+    `${pad(date.getMinutes())}-` +
+    `${pad(date.getSeconds())}`
+  );
+};
+
+const STAMP =
+  process.env.REEL_STAMP ||
+  buildStamp();
+
 const OUTPUT_FILE = path.join(
   OUTPUT_DIR,
-  "opis.txt",
+  `opis-${STAMP}.txt`,
 );
 
 /*
