@@ -37,6 +37,7 @@ type PhotoAnalysis = {
   recommendedMotion: PhotoMotion;
   motionStrength: number;
   productProminence?: number;
+  contentAspectRatio?: ContentAspect;
   confidence: number;
 };
 
@@ -45,6 +46,7 @@ type VideoAnalysis = {
   framing: "crop" | "fit";
   focusX: number;
   focusY: number;
+  contentAspectRatio?: ContentAspect;
   confidence: number;
 };
 
@@ -107,6 +109,46 @@ const PHOTO_SCALE = 1.18;
 const BASE_ZOOM = 0.1;
 const MAX_ZOOM = 0.2;
 
+const CANVAS_WIDTH = 1080;
+
+/*
+ * Ogrodzenia i bramy to obiekty szerokie. Wciśnięte w pełny kadr
+ * 9:16 traciły większość kompozycji, a wolne miejsce zajmowała
+ * droga albo murek.
+ *
+ * Dlatego materiał pokazujemy w węższym pasie 4:5 (domyślnie) albo
+ * 1:1 (gdy trzeba zachować szerokość), a resztę kadru wypełnia
+ * rozmyta, przyciemniona kopia tego samego ujęcia.
+ */
+type ContentAspect = "4:5" | "1:1";
+
+const CONTENT_HEIGHTS: Record<
+  ContentAspect,
+  number
+> = {
+  "4:5": Math.round(
+    (CANVAS_WIDTH * 5) / 4,
+  ),
+  "1:1": CANVAS_WIDTH,
+};
+
+const getContentHeight = (
+  aspect: ContentAspect | undefined,
+) => {
+  return (
+    CONTENT_HEIGHTS[
+      aspect ?? "4:5"
+    ] ?? CONTENT_HEIGHTS["4:5"]
+  );
+};
+
+// Tło: powiększone, żeby rozmycie nie odsłoniło krawędzi kadru.
+// Blur na tyle mocny, żeby nie było ostrych detali, ale nie tak
+// duży, żeby tło zrobiło się jednolitą plamą.
+const BACKDROP_SCALE = 1.3;
+const BACKDROP_BLUR = 45;
+const BACKDROP_BRIGHTNESS = 0.62;
+
 const analysisData =
   analysis as PhotoAnalysis[];
 
@@ -154,6 +196,7 @@ const getAnalysisForImage = (
         "zoomIn",
       motionStrength: 0.5,
       productProminence: 0.6,
+      contentAspectRatio: "4:5",
       confidence: 0,
     };
   }
@@ -176,6 +219,7 @@ const getAnalysisForVideo = (
       framing: "crop",
       focusX: 50,
       focusY: 50,
+      contentAspectRatio: "4:5",
       confidence: 0,
     };
   }
@@ -310,6 +354,71 @@ export const MyComposition =
       />
     );
   };
+
+/*
+ * Układ kadru: rozmyte tło na pełnym 1080x1920 + ostry pas
+ * z materiałem (4:5 albo 1:1) na środku.
+ *
+ * Tło to ta sama treść, powiększona i mocno rozmyta, żeby nie
+ * konkurowała z głównym ujęciem i żeby nie było czarnych pasów.
+ * Powiększenie jest konieczne, bo blur przy krawędziach próbkuje
+ * przezroczystość i bez zapasu widać ciemną obwódkę.
+ */
+const FramedMedia: React.FC<{
+  aspect?: ContentAspect;
+  backdrop: React.ReactNode;
+  children: React.ReactNode;
+}> = ({
+  aspect,
+  backdrop,
+  children,
+}) => {
+  const contentHeight =
+    getContentHeight(aspect);
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor:
+          "#0f0f10",
+        overflow: "hidden",
+      }}
+    >
+      <AbsoluteFill
+        style={{
+          transform: `scale(${BACKDROP_SCALE})`,
+          filter: `blur(${BACKDROP_BLUR}px) brightness(${BACKDROP_BRIGHTNESS}) saturate(0.85)`,
+        }}
+      >
+        {backdrop}
+      </AbsoluteFill>
+
+      <AbsoluteFill
+        style={{
+          alignItems:
+            "center",
+          justifyContent:
+            "center",
+        }}
+      >
+        <div
+          style={{
+            width:
+              CANVAS_WIDTH,
+            height:
+              contentHeight,
+            overflow:
+              "hidden",
+            position:
+              "relative",
+          }}
+        >
+          {children}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
 
 const getSafePanAmount = (
   scale: number,
@@ -469,10 +578,10 @@ const PhotoScene: React.FC<{
       interpolate(
         productProminence,
         [0.25, 0.6],
-        [2, 1],
+        [1.25, 1],
       ),
       1,
-      2,
+      1.25,
     );
 
   /*
@@ -604,11 +713,21 @@ const PhotoScene: React.FC<{
     );
 
   return (
-    <AbsoluteFill
-      style={{
-        overflow:
-          "hidden",
-      }}
+    <FramedMedia
+      aspect={
+        imageAnalysis.contentAspectRatio
+      }
+      backdrop={
+        <Img
+          src={staticFile(src)}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit:
+              "cover",
+          }}
+        />
+      }
     >
       <Img
         src={staticFile(src)}
@@ -627,7 +746,7 @@ const PhotoScene: React.FC<{
             "center center",
         }}
       />
-    </AbsoluteFill>
+    </FramedMedia>
   );
 };
 
@@ -719,11 +838,23 @@ const VideoScene: React.FC<{
     );
 
   return (
-    <AbsoluteFill
-      style={{
-        backgroundColor:
-          "black",
-      }}
+    <FramedMedia
+      aspect={
+        videoAnalysis.contentAspectRatio
+      }
+      backdrop={
+        <OffthreadVideo
+          src={staticFile(src)}
+          muted
+          startFrom={startFrom}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit:
+              "cover",
+          }}
+        />
+      }
     >
       <OffthreadVideo
         src={staticFile(src)}
@@ -736,7 +867,7 @@ const VideoScene: React.FC<{
           objectPosition,
         }}
       />
-    </AbsoluteFill>
+    </FramedMedia>
   );
 };
 

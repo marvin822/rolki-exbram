@@ -1,39 +1,39 @@
 {
   "scenes": [
     {
-      "file": "26-07-01 09-42-13 5650.jpg",
+      "file": "26-07-01 09-42-20 5651.jpg",
       "fragmentId": "",
       "duration": 4,
       "start": 0,
-      "reason": "Mocne frontalne otwarcie — detal poręczy z najwyższym productProminence; przyciąga uwagę."
+      "reason": "Otwarcie: najbardziej frontalne ujęcie z najwyższym productProminence — mocne wejście prezentujące balustradę."
     },
     {
       "file": "26-07-01 09-42-26 5652.jpg",
       "fragmentId": "",
       "duration": 3.5,
       "start": 0,
-      "reason": "Szersze wejście — inna perspektywa niż otwarcie, pokazuje produkt w kontekście schodów."
+      "reason": "Delikatny panRight (zgodnie z rekomendacją) — pokazuje kontekst wejścia i eksponuje prawą balustradę."
     },
     {
       "file": "26-07-01 09-42-46 5653.jpg",
       "fragmentId": "",
       "duration": 3.5,
       "start": 0,
-      "reason": "Ujęcie balkonowe — różnorodność perspektyw, daje oddech między zdjęciami wejścia."
+      "reason": "Inna perspektywa — balkon z pionowymi przęsłami; urozmaicenie ujęć i pokaz wykonania."
     },
     {
       "file": "26-07-01 09-42-49 5654.jpg",
       "fragmentId": "",
       "duration": 3.5,
       "start": 0,
-      "reason": "Taras — detal poręczy w innym otoczeniu, uzupełnia całość realizacji."
+      "reason": "Weranda/taras — kolejna odsłona produktu w spójnym kontekście realizacji."
     },
     {
-      "file": "26-07-01 09-42-20 5651.jpg",
+      "file": "26-07-01 09-42-13 5650.jpg",
       "fragmentId": "",
-      "duration": 3.5,
+      "duration": 4,
       "start": 0,
-      "reason": "Mocne zamknięcie rolki — wejście domu z wyraźną poręczą; frontalne, spójne zakończenie realizacji."
+      "reason": "Zamknięcie: detalowe zbliżenie schodów i poręczy — mocne, estetyczne zakończenie prezentacji."
     }
   ]
 }

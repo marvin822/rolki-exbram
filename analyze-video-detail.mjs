@@ -738,6 +738,11 @@ i krótko napisz w reason, dlaczego fragment odpada.
 
 DODATKOWE ZASADY:
 
+- contentAspectRatio: w rolce materiał leci w pasie na środku kadru,
+  a górę i dół wypełnia rozmyte tło z tego samego ujęcia. Podaj "4:5"
+  (domyślnie, ujęcie jest wtedy duże) albo "1:1", jeśli ujęcie jest
+  bardzo szerokie i przycięcie do 4:5 obcięłoby istotny fragment
+  ogrodzenia albo bramy.
 - Możesz zmienić refinedStart.
 - Możesz zmienić refinedEnd.
 - Nie możesz wyjść poza rzeczywistą długość filmu.
@@ -826,6 +831,11 @@ Zwróć WYŁĄCZNIE JSON.
                 ],
               },
 
+              contentAspectRatio: {
+                type: "string",
+                enum: ["4:5", "1:1"],
+              },
+
               focusX: {
                 type: "number",
               },
@@ -851,6 +861,7 @@ Zwróć WYŁĄCZNIE JSON.
               "refinedEnd",
               "refinedDuration",
               "framing",
+              "contentAspectRatio",
               "focusX",
               "focusY",
               "confidence",
@@ -955,6 +966,10 @@ function createFallbackFragment(
     framing:
       overview.framing ||
       "crop",
+
+    contentAspectRatio:
+      overview.contentAspectRatio ||
+      "4:5",
 
     focusX:
       overview.focusX ??
@@ -1138,6 +1153,9 @@ async function main() {
           framing:
             fallback.framing,
 
+          contentAspectRatio:
+            fallback.contentAspectRatio,
+
           focusX:
             fallback.focusX,
 
@@ -1290,6 +1308,9 @@ async function main() {
           framing:
             fallback.framing,
 
+          contentAspectRatio:
+            fallback.contentAspectRatio,
+
           focusX:
             fallback.focusX,
 
@@ -1354,6 +1375,9 @@ async function main() {
 
         framing:
           best.framing,
+
+        contentAspectRatio:
+          best.contentAspectRatio,
 
         focusX:
           best.focusX,
@@ -1424,6 +1448,9 @@ async function main() {
 
           framing:
             fallback.framing,
+
+          contentAspectRatio:
+            fallback.contentAspectRatio,
 
           focusX:
             fallback.focusX,

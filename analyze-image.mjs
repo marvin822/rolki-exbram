@@ -64,7 +64,7 @@ const MIN_VIDEO_FRAGMENT_QUALITY = 0.8;
  * pola albo istotnie prompt — starsze wpisy w analysis.json
  * zostaną wtedy przeanalizowane od nowa zamiast wziąć z cache.
  */
-const ANALYSIS_SCHEMA_VERSION = 4;
+const ANALYSIS_SCHEMA_VERSION = 5;
 
 const getMimeType = (
   extension,
@@ -392,6 +392,16 @@ Oceń dodatkowo:
   (przęsła, panele, lamele, brama, furtka, balustrada). Murek i podmurówka
   pod przęsłami NIE liczą się do tej wartości. Jeśli sam metal to poziomy pas
   zajmujący mniej niż ~1/3 wysokości zdjęcia, productProminence <= 0.5.
+- contentAspectRatio — w jakiej proporcji pokazać to ujęcie w rolce.
+  Rolka ma canvas 9:16, ale materiał wyświetlamy w węższym pasie na
+  środku, a górę i dół wypełnia rozmyte tło z tego samego ujęcia:
+  - "4:5" — DOMYŚLNIE. Dobry kompromis: ujęcie jest duże i widać
+    większość szerokiej kompozycji,
+  - "1:1" — gdy ujęcie jest bardzo szerokie i przycięcie do 4:5
+    obcięłoby istotny fragment ogrodzenia lub bramy (np. cała brama
+    wjazdowa albo długie przęsło w poprzek kadru). Kwadrat zachowuje
+    więcej szerokości kosztem wielkości — wybieraj go tylko wtedy,
+    gdy naprawdę ratuje kompozycję.
 - deadSpace 0-1 — jaka część kadru to powierzchnia NIEBĘDĄCA metalem EXBRAM:
   murek, podmurówka, słupki murowane/kamienne/betonowe, ściana, dach, niebo,
   goła ziemia, trawnik, asfalt, droga, chodnik, podjazd, kostka brukowa,
@@ -487,6 +497,12 @@ Odpowiedz wyłącznie JSON-em zgodnym ze schematem.
                 type: "number",
               },
 
+              contentAspectRatio: {
+                type: "string",
+
+                enum: ["4:5", "1:1"],
+              },
+
               deadSpace: {
                 type: "number",
               },
@@ -505,6 +521,7 @@ Odpowiedz wyłącznie JSON-em zgodnym ze schematem.
               "motionStrength",
               "shotType",
               "productProminence",
+              "contentAspectRatio",
               "deadSpace",
               "confidence",
             ],
