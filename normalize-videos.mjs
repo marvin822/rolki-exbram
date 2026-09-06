@@ -1,4 +1,5 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { spawnSync } from "child_process";
 
@@ -12,7 +13,20 @@ const supportedVideoExtensions = [
   ".webm",
 ];
 
-const FFMPEG_TIMEOUT_MS = 10 * 60 * 1000;
+const FFMPEG_TIMEOUT_MS = 20 * 60 * 1000;
+
+/*
+ * Stabilizacja obrazu (libvidstab, dwa przebiegi).
+ * Materiał z ręki bywa roztrzęsiony — bez tego panoramy
+ * w rolce wyglądają nerwowo. Kosztuje dodatkowy przebieg
+ * dekodowania; można wyłączyć: REEL_STABILIZE=0.
+ */
+const STABILIZE =
+  process.env.REEL_STABILIZE !==
+  "0";
+
+const SCALE_FILTER =
+  "scale=1920:1920:force_original_aspect_ratio=decrease";
 
 if (!fs.existsSync(publicDir)) {
   console.error(
@@ -131,8 +145,74 @@ for (const file of videoFiles) {
    * Obrót jest zdejmowany automatycznie z metadanych
    * (display matrix), więc nie liczymy transpose ręcznie.
    */
+  /*
+   * Przebieg 1 (opcjonalny): vidstabdetect liczy drgania kamery
+   * i zapisuje transformacje do pliku .trf. Analizę robimy już na
+   * przeskalowanym obrazie — jest dużo szybsza, a przebieg 2 używa
+   * dokładnie tej samej skali, więc transformacje pasują.
+   */
+  const transformsPath =
+    path.join(
+      os.tmpdir(),
+      `exbram-vidstab-${baseName.replace(
+        /[^a-z0-9]/gi,
+        "_",
+      )}.trf`,
+    );
+
+  let stabilizeFilter = null;
+
+  if (STABILIZE) {
+    console.log(
+      "Analiza drgań (vidstabdetect)...",
+    );
+
+    const detect = spawnSync(
+      "ffmpeg",
+      [
+        "-y",
+        "-i",
+        inputPath,
+        "-vf",
+        [
+          SCALE_FILTER,
+          `vidstabdetect=shakiness=6:accuracy=12:result=${transformsPath.replace(
+            /\\/g,
+            "/",
+          )}`,
+        ].join(","),
+        "-an",
+        "-f",
+        "null",
+        "-",
+      ],
+      {
+        stdio: "inherit",
+        timeout: FFMPEG_TIMEOUT_MS,
+        killSignal: "SIGKILL",
+      },
+    );
+
+    if (
+      detect.status === 0 &&
+      fs.existsSync(transformsPath)
+    ) {
+      stabilizeFilter = `vidstabtransform=input=${transformsPath.replace(
+        /\\/g,
+        "/",
+      )}:smoothing=30:optzoom=1:interpol=bicubic`;
+    } else {
+      console.warn(
+        "Stabilizacja nieudana — koduję bez niej.",
+      );
+    }
+  }
+
   const filterGraph = [
-    "scale=1920:1920:force_original_aspect_ratio=decrease",
+    SCALE_FILTER,
+    ...(stabilizeFilter
+      ? [stabilizeFilter]
+      : []),
     "format=yuv420p",
   ].join(",");
 
@@ -179,6 +259,10 @@ for (const file of videoFiles) {
       killSignal: "SIGKILL",
     },
   );
+
+  fs.rmSync(transformsPath, {
+    force: true,
+  });
 
   if (result.error) {
     console.error(

@@ -64,7 +64,7 @@ const MIN_VIDEO_FRAGMENT_QUALITY = 0.8;
  * pola albo istotnie prompt — starsze wpisy w analysis.json
  * zostaną wtedy przeanalizowane od nowa zamiast wziąć z cache.
  */
-const ANALYSIS_SCHEMA_VERSION = 2;
+const ANALYSIS_SCHEMA_VERSION = 3;
 
 const getMimeType = (
   extension,
@@ -225,6 +225,16 @@ Przeanalizuj zdjęcie realizacji firmy produkującej ogrodzenia.
 
 Potrzebujemy wykorzystać to zdjęcie w pionowym Reelu 1080x1920.
 
+CO JEST PRODUKTEM EXBRAM (najważniejsze):
+
+Produktem są WYŁĄCZNIE elementy METALOWE: przęsła, panele, lamele,
+brama, furtka, balustrada, kute ozdoby.
+
+Murek, podmurówka, słupki murowane/kamienne/betonowe, ściana, dach,
+kostka, podjazd, droga, trawnik i niebo to TŁO — nie produkt.
+Mur i podmurówka są sprawą drugorzędną; nie liczą się jako produkt,
+nawet jeśli ładnie wyglądają.
+
 Oceń:
 - co przedstawia zdjęcie,
 - jaki jest główny obiekt/element,
@@ -238,13 +248,15 @@ Oceń dodatkowo:
   - "context" — ogrodzenie/brama wyraźnie widoczne razem z otoczeniem (dom, słupki),
   - "detail" — zbliżenie na przęsła / lamele / bramę, wciąż jasno widać, że to ogrodzenie,
   - "macro" — bardzo ciasny kadr na pojedynczy element (śruba, wspornik, narożnik) bez kontekstu,
-- productProminence 0-1 — jaką część WYSOKOŚCI kadru zajmuje samo ogrodzenie/brama
-  i jak bardzo dominuje. Jeśli ogrodzenie to poziomy pas zajmujący mniej niż
-  ~1/3 wysokości zdjęcia, productProminence <= 0.5.
-- deadSpace 0-1 — jaka część kadru to powierzchnia NIEBĘDĄCA produktem EXBRAM:
-  niebo, goła ziemia, trawnik, asfalt, droga, chodnik, podjazd, kostka brukowa,
-  pusta ściana, dach, samochody. Ładna kostka albo równy podjazd to nadal
-  deadSpace — liczy się tylko to, że nie jest to ogrodzenie ani brama.
+- productProminence 0-1 — jaką część WYSOKOŚCI kadru zajmuje sam METAL
+  (przęsła, panele, lamele, brama, furtka, balustrada). Murek i podmurówka
+  pod przęsłami NIE liczą się do tej wartości. Jeśli sam metal to poziomy pas
+  zajmujący mniej niż ~1/3 wysokości zdjęcia, productProminence <= 0.5.
+- deadSpace 0-1 — jaka część kadru to powierzchnia NIEBĘDĄCA metalem EXBRAM:
+  murek, podmurówka, słupki murowane/kamienne/betonowe, ściana, dach, niebo,
+  goła ziemia, trawnik, asfalt, droga, chodnik, podjazd, kostka brukowa,
+  samochody. Ładna kostka, równy podjazd czy efektowny murek to nadal
+  deadSpace — liczy się tylko to, że nie jest to metalowe ogrodzenie ani brama.
 
 Zasady:
 - zoomIn stosuj, gdy główny obiekt znajduje się centralnie lub względnie centralnie,
@@ -253,10 +265,12 @@ Zasady:
 - panRight stosuj, gdy interesujący obiekt znajduje się bardziej po prawej stronie,
 - unikaj agresywnego ruchu,
 - focusX i focusY podawaj jako procenty 0-100,
-- focusX/focusY ustaw DOKŁADNIE na ogrodzeniu/bramie, gdziekolwiek jest w kadrze:
-  gdy produkt jest wysoko, focusY może być 25-40; gdy nisko — 60-80; nigdy nie
-  zostawiaj 50 „na wszelki wypadek" i nigdy nie celuj w dużą powierzchnię
-  podjazdu, kostki, drogi, trawnika, dachu ani nieba,
+- focusX/focusY ustaw DOKŁADNIE na METALOWEJ części ogrodzenia lub bramy,
+  gdziekolwiek jest w kadrze: gdy metal jest wysoko, focusY może być 25-40;
+  gdy nisko — 60-80; nigdy nie zostawiaj 50 „na wszelki wypadek",
+- focusY NIE może wskazywać na murek/podmurówkę pod przęsłami ani na
+  podjazd, kostkę, drogę, trawnik, dach czy niebo — celuj w środek
+  metalowych przęseł,
 - motionStrength podawaj jako wartość 0-1.
 
 Odpowiedz wyłącznie JSON-em zgodnym ze schematem.

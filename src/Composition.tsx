@@ -631,6 +631,31 @@ const VideoScene: React.FC<{
       videoFrames - 1,
     );
 
+  /*
+   * OffthreadVideo pokazuje klatkę (startFrom + frame), więc
+   * startFrom musi być STAŁY, żeby film leciał w tempie 1:1.
+   * Wcześniej dodawaliśmy tu clampedFrame, przez co przesunięcie
+   * sumowało się z przesunięciem Remotiona i materiał leciał 2x
+   * za szybko.
+   *
+   * Kompensujemy frame, żeby wyświetlana klatka źródła wynosiła
+   * dokładnie startBase + clampedFrame — dzięki temu po końcu
+   * fragmentu (dodatkowe klatki przejścia) obraz zatrzymuje się
+   * na ostatniej klatce zamiast lecieć dalej.
+   */
+  const startBase =
+    Math.round(
+      start * FPS,
+    );
+
+  const startFrom =
+    Math.max(
+      0,
+      startBase +
+        clampedFrame -
+        frame,
+    );
+
   return (
     <AbsoluteFill
       style={{
@@ -641,12 +666,7 @@ const VideoScene: React.FC<{
       <OffthreadVideo
         src={staticFile(src)}
         muted
-        startFrom={
-          Math.round(
-            start * FPS,
-          ) +
-          clampedFrame
-        }
+        startFrom={startFrom}
         style={{
           width: "100%",
           height: "100%",

@@ -169,9 +169,11 @@ Szukasz dobrych KANDYDATÓW.
 
 NAJWAŻNIEJSZE KRYTERIA:
 
-1. Produkt EXBRAM musi być dobrze widoczny.
-2. Ogrodzenie, brama, furtka, panel lub balustrada powinny
-   zajmować dużą część kadru.
+1. Produktem są WYŁĄCZNIE elementy METALOWE (przęsła, panele, lamele,
+   brama, furtka, balustrada). Murek, podmurówka, słupki murowane,
+   ściana, kostka i droga to tło, nie produkt.
+2. Metalowe przęsła, brama lub furtka powinny zajmować dużą część
+   kadru — sam murek albo podmurówka to za mało.
 3. Kadr powinien dobrze działać po przycięciu do 9:16.
 4. Preferuj momenty sprzedażowe i estetyczne.
 5. Preferuj momenty, w których produkt jest łatwy do rozpoznania.
@@ -694,11 +696,21 @@ Otrzymujesz ${extracted.frames.length} szczegółowych klatek.
 Twoim zadaniem jest wybrać NAJLEPSZY konkretny fragment
 wewnątrz tego zakresu do reklamowego Reela 9:16.
 
+CO JEST PRODUKTEM:
+
+Produktem są WYŁĄCZNIE elementy METALOWE: przęsła, panele, lamele,
+brama, furtka, balustrada, kute ozdoby. Murek, podmurówka, słupki
+murowane/kamienne/betonowe, ściana, kostka, podjazd, droga i niebo
+to tło — mur i podmurówka są sprawą drugorzędną.
+
+focusX/focusY muszą wskazywać środek METALOWYCH przęseł, a nie
+murek pod nimi ani nawierzchnię przed ogrodzeniem.
+
 PRIORYTETY:
 
 1. Produkt musi być dobrze widoczny.
-2. Ogrodzenie, brama, furtka, panel lub balustrada powinny
-   zajmować możliwie dużą część kadru.
+2. Metalowe przęsła, brama, furtka, panel lub balustrada powinny
+   zajmować możliwie dużą część kadru (sam murek się nie liczy).
 3. Produkt powinien być łatwy do rozpoznania bez zatrzymywania filmu.
 4. Preferuj atrakcyjne ujęcie sprzedażowe zamiast przypadkowego
    ruchu kamery.
