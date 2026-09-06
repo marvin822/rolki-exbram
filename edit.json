@@ -1,46 +1,53 @@
 {
   "scenes": [
     {
-      "file": "26-07-10 12-37-30 5701.jpg",
+      "file": "DSC_9915.jpg",
       "fragmentId": "",
-      "duration": 2.8,
+      "duration": 4.5,
       "start": 0,
-      "reason": "Mocne otwierające ujęcie — dekoracyjna brama przyciąga uwagę."
+      "reason": "Mocne otwarcie — główne frontowe ogrodzenie i brama, przyciąga uwagę."
     },
     {
-      "file": "26-07-10 12-36-02 5696.mov",
-      "fragmentId": "26-07-10 12-36-02 5696.mov#fragment-1",
-      "duration": 2.5,
-      "start": 5.45,
-      "reason": "Krótki, dynamiczny fragment w ruchu — pokaz kontekstu i skali realizacji."
-    },
-    {
-      "file": "26-07-10 12-37-20 5700.jpg",
+      "file": "DSC_9921.jpg",
       "fragmentId": "",
-      "duration": 2,
+      "duration": 3.5,
       "start": 0,
-      "reason": "Detal panelu z ażurowym motywem — podkreślenie jakości wykonania."
+      "reason": "Szersza perspektywa poziomego ogrodzenia — pokazuje linię i rytm przęseł."
     },
     {
-      "file": "26-07-10 12-38-00 5703.jpg",
+      "file": "DSC_9933.jpg",
       "fragmentId": "",
-      "duration": 2,
+      "duration": 3,
       "start": 0,
-      "reason": "Inna perspektywa — balustrada balkonowa pokazująca różnorodność produktów."
+      "reason": "Detal mocowania — podkreśla jakość wykonania i trwałość."
     },
     {
-      "file": "26-07-10 12-36-02 5696.mov",
-      "fragmentId": "26-07-10 12-36-02 5696.mov#fragment-4",
-      "duration": 3.6300000000000026,
-      "start": 29.04,
-      "reason": "Silny ruchomy kadr przed finałem — szerokie ujęcie realizacji."
-    },
-    {
-      "file": "26-07-10 12-37-05 5697.jpg",
+      "file": "DSC_9947.jpg",
       "fragmentId": "",
-      "duration": 2,
+      "duration": 3,
       "start": 0,
-      "reason": "Kończące, szersze ujęcie z panelem ażurowym — finalne wrażenie profesjonalizmu."
+      "reason": "Zbliżenie lameli — estetyka materiału i faktura."
+    },
+    {
+      "file": "DSC_9954.jpg",
+      "fragmentId": "",
+      "duration": 3.5,
+      "start": 0,
+      "reason": "Ujęcie całości realizacji na tle domu — kontekst architektoniczny."
+    },
+    {
+      "file": "DSC_9930.jpg",
+      "fragmentId": "",
+      "duration": 3,
+      "start": 0,
+      "reason": "Detal złącza/bramy — ważny punkt techniczny, buduje zaufanie."
+    },
+    {
+      "file": "DSC_9918.jpg",
+      "fragmentId": "",
+      "duration": 3,
+      "start": 0,
+      "reason": "Mocne zakończenie — eleganckie, symetryczne ujęcie całego ogrodzenia jako plansza końcowa."
     }
   ]
 }
