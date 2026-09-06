@@ -1,46 +1,46 @@
 {
   "scenes": [
     {
-      "file": "26-07-10 12-37-05 5697.jpg",
+      "file": "26-07-10 12-37-30 5701.jpg",
       "fragmentId": "",
-      "duration": 3,
+      "duration": 2.8,
       "start": 0,
-      "reason": "Mocny opener — panRight, pokazuje kilka paneli i prowadzącą linię ogrodzenia."
+      "reason": "Mocne otwierające ujęcie — dekoracyjna brama przyciąga uwagę."
     },
     {
       "file": "26-07-10 12-36-02 5696.mov",
       "fragmentId": "26-07-10 12-36-02 5696.mov#fragment-1",
-      "duration": 2.5999999999999996,
-      "start": 5.4,
-      "reason": "Dynamiczny fragment wideo — ruch kamery ukazuje kontekst i fakturę paneli."
-    },
-    {
-      "file": "26-07-10 12-37-30 5701.jpg",
-      "fragmentId": "",
       "duration": 2.5,
-      "start": 0,
-      "reason": "Mocne ujęcie bramy z dekoracyjnym motywem — dobre jako wyróżnienie realizacji."
+      "start": 5.45,
+      "reason": "Krótki, dynamiczny fragment w ruchu — pokaz kontekstu i skali realizacji."
     },
     {
       "file": "26-07-10 12-37-20 5700.jpg",
       "fragmentId": "",
       "duration": 2,
       "start": 0,
-      "reason": "Detal panelu przed domem — zróżnicowanie perspektyw (zoomIn rekomendowany)."
+      "reason": "Detal panelu z ażurowym motywem — podkreślenie jakości wykonania."
     },
     {
-      "file": "26-07-10 12-38-23 5704.jpg",
+      "file": "26-07-10 12-38-00 5703.jpg",
       "fragmentId": "",
       "duration": 2,
       "start": 0,
-      "reason": "Inna perspektywa — balkonowa balustrada z tym samym motywem, pokazuje wszechstronność produktu."
+      "reason": "Inna perspektywa — balustrada balkonowa pokazująca różnorodność produktów."
     },
     {
       "file": "26-07-10 12-36-02 5696.mov",
       "fragmentId": "26-07-10 12-36-02 5696.mov#fragment-4",
-      "duration": 1.8099999999999952,
-      "start": 34.49,
-      "reason": "Krótkie zamknięcie wideo — energetyczne ujęcie na koniec, wzmacnia przekaz realizacji."
+      "duration": 3.6300000000000026,
+      "start": 29.04,
+      "reason": "Silny ruchomy kadr przed finałem — szerokie ujęcie realizacji."
+    },
+    {
+      "file": "26-07-10 12-37-05 5697.jpg",
+      "fragmentId": "",
+      "duration": 2,
+      "start": 0,
+      "reason": "Kończące, szersze ujęcie z panelem ażurowym — finalne wrażenie profesjonalizmu."
     }
   ]
 }
