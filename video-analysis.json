@@ -1,1 +1,79 @@
-[]
+[
+  {
+    "file": "26-06-03 14-06-23 5394.mov",
+    "usable": true,
+    "qualityScore": 0.95,
+    "recommendedStart": 5.9,
+    "recommendedDuration": 3.5999999999999996,
+    "refinedStart": 5.9,
+    "refinedDuration": 3.5999999999999996,
+    "framing": "crop",
+    "contentAspectRatio": "4:5",
+    "focusX": 50,
+    "focusY": 48,
+    "confidence": 0.95,
+    "reason": "Wybrałem końcową część zakresu (5.9–9.5s) ponieważ przęsła i przesuwna brama są wyraźnie w centrum kadru, metalowe lamele zajmują dużą część obrazu i są łatwo rozpoznawalne bez zatrzymywania. Ujęcie jest stabilne (niewielkie przesunięcie kamery) i po przycięciu do 9:16/4:5 produkt pozostaje głównym elementem — minimalna ilość nieistotnego nieba i asfaltu. Crop pozwoli skupić uwagę na metalowych panelach i detalach wykończenia.",
+    "fragments": [
+      {
+        "file": "26-06-03 14-06-23 5394.mov",
+        "usable": true,
+        "qualityScore": 0.95,
+        "refinedStart": 5.9,
+        "refinedEnd": 9.5,
+        "refinedDuration": 3.5999999999999996,
+        "framing": "crop",
+        "contentAspectRatio": "4:5",
+        "focusX": 50,
+        "focusY": 48,
+        "confidence": 0.95,
+        "reason": "Wybrałem końcową część zakresu (5.9–9.5s) ponieważ przęsła i przesuwna brama są wyraźnie w centrum kadru, metalowe lamele zajmują dużą część obrazu i są łatwo rozpoznawalne bez zatrzymywania. Ujęcie jest stabilne (niewielkie przesunięcie kamery) i po przycięciu do 9:16/4:5 produkt pozostaje głównym elementem — minimalna ilość nieistotnego nieba i asfaltu. Crop pozwoli skupić uwagę na metalowych panelach i detalach wykończenia.",
+        "fragmentId": "26-06-03 14-06-23 5394.mov#fragment-1"
+      },
+      {
+        "file": "26-06-03 14-06-23 5394.mov",
+        "usable": true,
+        "qualityScore": 0.9,
+        "refinedStart": 11.6,
+        "refinedEnd": 15.8,
+        "refinedDuration": 4.200000000000001,
+        "framing": "crop",
+        "contentAspectRatio": "4:5",
+        "focusX": 50,
+        "focusY": 46,
+        "confidence": 0.92,
+        "reason": "Wybieram środek ruchu (ok. 11.6–15.8s) ponieważ w tym momencie metalowe przęsła i przesuwna brama zajmują dominującą część kadru, są wyraźne i łatwe do rozpoznania. Kadr ma stabilne, sprzedażowe ujęcie paneli — minimalna ilość nieistotnego asfaltu/nieba, dobry kontrast i czytelne przęsła po przycięciu do pionowego Reela. Początek/zakończenie zakresu zawierają więcej bocznych ruchów kamery, dlatego je skróciłem.",
+        "fragmentId": "26-06-03 14-06-23 5394.mov#fragment-2"
+      },
+      {
+        "file": "26-06-03 14-06-23 5394.mov",
+        "usable": true,
+        "qualityScore": 0.9,
+        "refinedStart": 22.2,
+        "refinedEnd": 25.8,
+        "refinedDuration": 3.6000000000000014,
+        "framing": "crop",
+        "contentAspectRatio": "4:5",
+        "focusX": 50,
+        "focusY": 45,
+        "confidence": 0.95,
+        "reason": "Wybieram fragment 22.2–25.8 s: w tych 3.6 s metalowe przęsła zajmują największą część kadru, poziome lamele i słupki są wyraźne i łatwo rozpoznawalne bez zatrzymywania. Tło (niebo, chodnik) jest ograniczone — po przycięciu pionowo (crop, 4:5) produkt będzie centralny i duży. Brak mocnych rozpraszaczy, dobry kąt pokazujący powtarzalność i jakość wykończenia. Focus (50,45) ustawiony na środek metalowych paneli, nie na murek/nawierzchnię.",
+        "fragmentId": "26-06-03 14-06-23 5394.mov#fragment-3"
+      },
+      {
+        "file": "26-06-03 14-06-23 5394.mov",
+        "usable": true,
+        "qualityScore": 0.92,
+        "refinedStart": 40,
+        "refinedEnd": 44,
+        "refinedDuration": 4,
+        "framing": "crop",
+        "contentAspectRatio": "4:5",
+        "focusX": 50,
+        "focusY": 45,
+        "confidence": 0.93,
+        "reason": "Wybrano 4 s (40.0–44.0) ponieważ w tym fragmencie brama/przęsła są centralnie skomponowane i zajmują największą część kadru — wyraźny, sprzedażowy widok metalowych lameli i słupka. Minimalne zakłócające cienie i mniejsze niebo/tło; początkowe 0.5 s (≈39.5–40.0) miało więcej nieba/cienia, więc skróciłem do mocniejszego ujęcia pod 9:16.",
+        "fragmentId": "26-06-03 14-06-23 5394.mov#fragment-4"
+      }
+    ]
+  }
+]

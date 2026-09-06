@@ -1,39 +1,46 @@
 {
   "scenes": [
     {
-      "file": "26-07-01 09-42-20 5651.jpg",
+      "file": "26-06-03 14-07-28 5396.jpg",
       "fragmentId": "",
+      "duration": 3,
+      "start": 0,
+      "reason": "Otwarcie — najwyższa widoczność produktu w zestawie, frontalne ujęcie podkreślające lamele."
+    },
+    {
+      "file": "26-06-03 14-06-23 5394.mov",
+      "fragmentId": "26-06-03 14-06-23 5394.mov#fragment-1",
+      "duration": 3.5999999999999996,
+      "start": 5.9,
+      "reason": "Krótki fragment wideo — subtelny ruch kamery ożywia rolkę i pokazuje materiał w ruchu."
+    },
+    {
+      "file": "26-06-03 14-07-25 5395.jpg",
+      "fragmentId": "",
+      "duration": 3,
+      "start": 0,
+      "reason": "Szersze ujęcie kontekstowe — pokazuje przęsło na tle domu, różnorodność kadru."
+    },
+    {
+      "file": "26-06-03 14-07-58 5398.jpg",
+      "fragmentId": "",
+      "duration": 3,
+      "start": 0,
+      "reason": "Ujęcie bramy/wjazdu — inna perspektywa, przeplata zdjęcia dla rytmu."
+    },
+    {
+      "file": "26-06-03 14-06-23 5394.mov",
+      "fragmentId": "26-06-03 14-06-23 5394.mov#fragment-4",
       "duration": 4,
-      "start": 0,
-      "reason": "Otwarcie: najbardziej frontalne ujęcie z najwyższym productProminence — mocne wejście prezentujące balustradę."
+      "start": 40,
+      "reason": "Drugi fragment wideo — dodatkowa dynamika; umieszczony oddzielnie od pierwszego filmu."
     },
     {
-      "file": "26-07-01 09-42-26 5652.jpg",
+      "file": "26-06-03 14-07-54 5397.jpg",
       "fragmentId": "",
-      "duration": 3.5,
+      "duration": 3,
       "start": 0,
-      "reason": "Delikatny panRight (zgodnie z rekomendacją) — pokazuje kontekst wejścia i eksponuje prawą balustradę."
-    },
-    {
-      "file": "26-07-01 09-42-46 5653.jpg",
-      "fragmentId": "",
-      "duration": 3.5,
-      "start": 0,
-      "reason": "Inna perspektywa — balkon z pionowymi przęsłami; urozmaicenie ujęć i pokaz wykonania."
-    },
-    {
-      "file": "26-07-01 09-42-49 5654.jpg",
-      "fragmentId": "",
-      "duration": 3.5,
-      "start": 0,
-      "reason": "Weranda/taras — kolejna odsłona produktu w spójnym kontekście realizacji."
-    },
-    {
-      "file": "26-07-01 09-42-13 5650.jpg",
-      "fragmentId": "",
-      "duration": 4,
-      "start": 0,
-      "reason": "Zamknięcie: detalowe zbliżenie schodów i poręczy — mocne, estetyczne zakończenie prezentacji."
+      "reason": "Zakończenie — mocne, szczegółowe ujęcie paneli; zamyka realizację silnym akcentem."
     }
   ]
 }
