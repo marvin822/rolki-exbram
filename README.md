@@ -1,54 +1,36 @@
-# Remotion video
+# EXBRAM — generator Reels
 
-<p align="center">
-  <a href="https://github.com/remotion-dev/logo">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-dark.apng">
-      <img alt="Animated Remotion Logo" src="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-light.gif">
-    </picture>
-  </a>
-</p>
+Automatyczny generator pionowych rolek (1080×1920) z materiałów z realizacji
+ogrodzeń. AI analizuje zdjęcia i filmy, wybiera ujęcia i układa montaż,
+Remotion składa gotowy plik, a na koniec powstaje opis pod Facebooka
+i Instagram.
 
-Welcome to your Remotion project!
+## Szybki start
 
-## Commands
+1. Wrzuć materiały:
+   - zdjęcia → `public/media/photos`
+   - filmy → `public/media/videos`
+2. Ustaw `OPENAI_API_KEY` (zmienna środowiskowa albo plik `.env`)
+3. Dwuklik na `make-reel.bat` (albo `node make-reel.mjs`)
 
-**Install Dependencies**
+Wynik ląduje w `output/` jako para plików ze wspólnym znacznikiem czasu:
 
-```console
-npm i
+```
+output/reel-2026-09-06_23-32-45.mp4
+output/opis-2026-09-06_23-32-45.txt
 ```
 
-**Start Preview**
+## Dokumentacja
 
-```console
-npm run dev
-```
+Pełny opis pipeline'u, logiki kadrowania, reguł montażu i wykrytych pułapek:
+**[EXBRAM_generator_reels_podsumowanie.md](EXBRAM_generator_reels_podsumowanie.md)**
 
-**Render video**
+## Wymagania
 
-```console
-npx remotion render
-```
+- Node.js 24
+- FFmpeg z `libvidstab` (stabilizacja) i `h264_nvenc` (enkoder GPU, NVIDIA)
+- Klucz OpenAI
 
-**Upgrade Remotion**
+## Stack
 
-```console
-npx remotion upgrade
-```
-
-## Docs
-
-Get started with Remotion by reading the [fundamentals page](https://www.remotion.dev/docs/the-fundamentals).
-
-## Help
-
-We provide help on our [Discord server](https://discord.gg/6VzzNDwUwV).
-
-## Issues
-
-Found an issue with Remotion? [File an issue here](https://github.com/remotion-dev/remotion/issues/new).
-
-## License
-
-Note that for some entities a company license is needed. [Read the terms here](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md).
+Node.js · Remotion 4 + React/TypeScript · FFmpeg · OpenAI `gpt-5-mini`
