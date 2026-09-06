@@ -1,53 +1,46 @@
 {
   "scenes": [
     {
-      "file": "DSC_9915.jpg",
-      "fragmentId": "",
-      "duration": 4.5,
-      "start": 0,
-      "reason": "Mocne otwarcie — główne frontowe ogrodzenie i brama, przyciąga uwagę."
-    },
-    {
-      "file": "DSC_9921.jpg",
-      "fragmentId": "",
-      "duration": 3.5,
-      "start": 0,
-      "reason": "Szersza perspektywa poziomego ogrodzenia — pokazuje linię i rytm przęseł."
-    },
-    {
-      "file": "DSC_9933.jpg",
-      "fragmentId": "",
-      "duration": 3,
-      "start": 0,
-      "reason": "Detal mocowania — podkreśla jakość wykonania i trwałość."
-    },
-    {
       "file": "DSC_9947.jpg",
       "fragmentId": "",
-      "duration": 3,
+      "duration": 4,
       "start": 0,
-      "reason": "Zbliżenie lameli — estetyka materiału i faktura."
+      "reason": "Mocne zbliżenie lameli — świetne, ekspresyjne otwarcie; wysoka ekspozycja produktu i niski deadSpace."
     },
     {
-      "file": "DSC_9954.jpg",
+      "file": "DSC_9925.jpg",
       "fragmentId": "",
-      "duration": 3.5,
+      "duration": 3.25,
       "start": 0,
-      "reason": "Ujęcie całości realizacji na tle domu — kontekst architektoniczny."
-    },
-    {
-      "file": "DSC_9930.jpg",
-      "fragmentId": "",
-      "duration": 3,
-      "start": 0,
-      "reason": "Detal złącza/bramy — ważny punkt techniczny, buduje zaufanie."
+      "reason": "Ujęcie kontekstowe z panoramą — pokazuje ogrodzenie przy domu, dobra zmiana perspektywy po zbliżeniu."
     },
     {
       "file": "DSC_9918.jpg",
       "fragmentId": "",
       "duration": 3,
       "start": 0,
-      "reason": "Mocne zakończenie — eleganckie, symetryczne ujęcie całego ogrodzenia jako plansza końcowa."
+      "reason": "Detal lamel i betonowych słupków — podkreślenie jakości wykonania i materiału."
+    },
+    {
+      "file": "DSC_9957.jpg",
+      "fragmentId": "",
+      "duration": 3,
+      "start": 0,
+      "reason": "Perspektywa przęsła z widoczną bramą i słupkami — pokaz integracji elementów realizacji."
+    },
+    {
+      "file": "DSC_9938.jpg",
+      "fragmentId": "",
+      "duration": 3.25,
+      "start": 0,
+      "reason": "Kolejne ujęcie kontekstowe dla rytmu i skali projektu — różnorodność kadrów przed finałem."
+    },
+    {
+      "file": "DSC_9930.jpg",
+      "fragmentId": "",
+      "duration": 3.5,
+      "start": 0,
+      "reason": "Mocne zamknięcie: zbliżenie zawiasu/ zamka — wysokiej jakości detal, niski deadSpace, atrakcyjny finał."
     }
   ]
 }

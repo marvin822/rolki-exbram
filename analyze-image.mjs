@@ -225,6 +225,15 @@ Oceń:
 - czy lepszy będzie zoom czy przesunięcie obrazu,
 - jak silny powinien być ruch.
 
+Oceń dodatkowo:
+- shotType:
+  - "wide" — cała realizacja z dużej odległości, ogrodzenie to mała część kadru,
+  - "context" — ogrodzenie/brama wyraźnie widoczne razem z otoczeniem (dom, słupki),
+  - "detail" — zbliżenie na przęsła / lamele / bramę, wciąż jasno widać, że to ogrodzenie,
+  - "macro" — bardzo ciasny kadr na pojedynczy element (śruba, wspornik, narożnik) bez kontekstu,
+- productProminence 0-1 — jak dużą część kadru zajmuje produkt i jak bardzo dominuje,
+- deadSpace 0-1 — jaka część kadru to niebo / goła ziemia / asfalt / pusta ściana / elementy nieistotne.
+
 Zasady:
 - zoomIn stosuj, gdy główny obiekt znajduje się centralnie lub względnie centralnie,
 - zoomOut stosuj tylko wtedy, gdy pokazanie całej realizacji daje wyraźnie lepszy efekt,
@@ -232,6 +241,8 @@ Zasady:
 - panRight stosuj, gdy interesujący obiekt znajduje się bardziej po prawej stronie,
 - unikaj agresywnego ruchu,
 - focusX i focusY podawaj jako procenty 0-100,
+- jeśli ogrodzenie jest poziomym pasem w dolnej części kadru, ustaw focusY
+  w stronę ogrodzenia (zwykle 60-80), a nie na środek,
 - motionStrength podawaj jako wartość 0-1.
 
 Odpowiedz wyłącznie JSON-em zgodnym ze schematem.
@@ -293,6 +304,25 @@ Odpowiedz wyłącznie JSON-em zgodnym ze schematem.
                 type: "number",
               },
 
+              shotType: {
+                type: "string",
+
+                enum: [
+                  "wide",
+                  "context",
+                  "detail",
+                  "macro",
+                ],
+              },
+
+              productProminence: {
+                type: "number",
+              },
+
+              deadSpace: {
+                type: "number",
+              },
+
               confidence: {
                 type: "number",
               },
@@ -305,6 +335,9 @@ Odpowiedz wyłącznie JSON-em zgodnym ze schematem.
               "focusY",
               "recommendedMotion",
               "motionStrength",
+              "shotType",
+              "productProminence",
+              "deadSpace",
               "confidence",
             ],
           },
@@ -342,6 +375,15 @@ const generateEditPlan = async ({
 
         motionStrength:
           item.motionStrength,
+
+        shotType:
+          item.shotType,
+
+        productProminence:
+          item.productProminence,
+
+        deadSpace:
+          item.deadSpace,
 
         confidence:
           item.confidence,
@@ -515,6 +557,18 @@ KOMPOZYCJA:
 - mocny materiał może pojawić się bliżej końca,
 - zakończ mocnym ujęciem realizacji,
 - rolka ma sprawiać wrażenie profesjonalnego materiału reklamowego, a nie pokazu wszystkich zdjęć fotografa.
+
+JAKOŚĆ KADRU (używaj pól shotType, productProminence, deadSpace):
+
+- na OTWARCIE i ZAKOŃCZENIE wybieraj ujęcia z wysokim productProminence
+  (produkt wypełnia dużą część kadru) i niskim deadSpace,
+- NIE otwieraj rolki ujęciem shotType="wide" ani żadnym z deadSpace > 0.4,
+- ujęć z deadSpace > 0.45 używaj tylko, gdy nie ma nic lepszego,
+  i nigdy dwóch obok siebie,
+- shotType="macro" użyj maksymalnie raz w całej rolce i nigdy jako
+  pierwsze ani ostatnie ujęcie,
+- preferuj shotType="context" i "detail"; "wide" najwyżej jedno,
+  w środkowej części rolki.
 
 ZDJĘCIA:
 
@@ -929,11 +983,26 @@ const main = async () => {
     const file of
       imageFiles
   ) {
-    if (
-      existingAnalysis.has(
+    const cached =
+      existingAnalysis.get(
         file,
-      )
-    ) {
+      );
+
+    /*
+     * Cache jest ważny tylko, gdy zawiera wszystkie pola,
+     * których dziś potrzebuje planer (shotType / productProminence
+     * / deadSpace). Starsze wpisy analizujemy ponownie.
+     */
+    const cacheComplete =
+      cached &&
+      typeof cached.shotType ===
+        "string" &&
+      typeof cached.productProminence ===
+        "number" &&
+      typeof cached.deadSpace ===
+        "number";
+
+    if (cacheComplete) {
       console.log(
         `Pomijam istniejącą analizę: ${file}`,
       );
