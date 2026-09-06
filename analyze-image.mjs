@@ -51,6 +51,14 @@ const VIDEO_EXTENSIONS = [
   ".webm",
 ];
 
+/*
+ * Minimalna jakość fragmentu wideo, żeby w ogóle trafił
+ * do planera. Poniżej tej wartości (albo usable=false)
+ * fragment jest pomijany — zwykle są to rozmyte najazdy
+ * albo makro, na którym nie widać, że to ogrodzenie.
+ */
+const MIN_VIDEO_FRAGMENT_QUALITY = 0.8;
+
 const getMimeType = (
   extension,
 ) => {
@@ -431,6 +439,33 @@ const generateEditPlan = async ({
     ),
   ];
 
+  /*
+   * P1: odfiltrowujemy słabe fragmenty wideo, żeby planer
+   * wybierał tylko spośród ujęć, na których produkt jest
+   * wyraźnie widoczny (bez rozmytych najazdów i makro).
+   */
+  const usableMedia =
+    media.filter(
+      (entry) =>
+        entry.type !== "video" ||
+        (entry.usable !==
+          false &&
+          Number(
+            entry.qualityScore,
+          ) >=
+            MIN_VIDEO_FRAGMENT_QUALITY),
+    );
+
+  const droppedVideos =
+    media.length -
+    usableMedia.length;
+
+  if (droppedVideos > 0) {
+    console.log(
+      `Pominięto ${droppedVideos} słabych fragmentów wideo (jakość < ${MIN_VIDEO_FRAGMENT_QUALITY}).`,
+    );
+  }
+
   console.log(
     "\nTworzę plan montażu...",
   );
@@ -454,7 +489,7 @@ Na podstawie dostępnych materiałów przygotuj atrakcyjną, dynamiczną rolkę 
 
 MATERIAŁY:
 ${JSON.stringify(
-  media,
+  usableMedia,
   null,
   2,
 )}
@@ -628,7 +663,7 @@ Zwróć wyłącznie JSON zgodny ze schematem.
 
   const allowedMedia =
     new Map(
-      media.map(
+      usableMedia.map(
         (item) => [
           `${item.file}::${item.fragmentId ?? ""}`,
           item,

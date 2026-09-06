@@ -184,6 +184,18 @@ NAJWAŻNIEJSZE KRYTERIA:
 10. Jeżeli film pokazuje kilka różnych elementów ogrodzenia,
     mogą one być osobnymi kandydatami.
 
+ODRZUCAJ (nie zgłaszaj jako kandydat):
+
+- fragmenty z rozmyciem ruchu / szybkim panoramowaniem —
+  klatki wyglądają jak smugi, nie widać ostrego ogrodzenia,
+- makro bez kontekstu (sama śruba, sam wspornik, kawałek
+  profilu z bliska) — po przycięciu do 9:16 nie da się poznać,
+  że to ogrodzenie,
+- ujęcia, na których przypadkowy widz przewijający rolkę NIE
+  rozpozna w pół sekundy ogrodzenia, bramy lub furtki,
+- kadr ciaśniejszy niż „kilka przęseł / lameli razem z
+  elementem kontekstu" (słupek, róg panelu, tło realizacji).
+
 BARDZO WAŻNE:
 
 - Kandydaci mogą być oddaleni od siebie.
@@ -204,6 +216,8 @@ DLA KAŻDEGO KANDYDATA ZWRÓĆ:
 
 qualityScore:
 0-1, gdzie 1 oznacza bardzo dobry materiał reklamowy.
+Rozmycie ruchu, makro bez kontekstu albo brak rozpoznawalnego
+produktu = qualityScore poniżej 0.4.
 
 Zwróć maksymalnie ${MAX_CANDIDATES} kandydatów.
 Nie musisz wykorzystać całego limitu.
@@ -697,6 +711,18 @@ PRIORYTETY:
 9. Szukaj najlepszego momentu prezentującego realizację EXBRAM.
 10. Jeśli początek lub koniec zakresu jest słabszy,
     skróć fragment.
+
+USABLE = FALSE (ustaw, gdy zachodzi którykolwiek warunek):
+
+- klatki są rozmyte od ruchu / szybkiego panoramowania,
+- to makro bez kontekstu (śruba, wspornik, fragment profilu
+  z bliska) i nie widać, że to ogrodzenie,
+- po przycięciu do 9:16 przypadkowy widz nie rozpozna w pół
+  sekundy ogrodzenia, bramy ani furtki,
+- w całym zakresie dominują asfalt / niebo / pusta ściana / ziemia.
+
+Gdy usable=false, ustaw też qualityScore poniżej 0.4
+i krótko napisz w reason, dlaczego fragment odpada.
 
 DODATKOWE ZASADY:
 
