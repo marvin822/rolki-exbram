@@ -19,6 +19,7 @@ import { fade } from "@remotion/transitions/fade";
 import editPlan from "../edit.json";
 import analysis from "../analysis.json";
 import videoAnalysis from "../video-analysis.json";
+import musicSelection from "../music.json";
 
 type Props = {};
 
@@ -80,16 +81,20 @@ const END_CARD_DURATION = 3;
 /*
  * Muzyka w tle.
  *
- * Na razie stały utwór grający przez całą rolkę
- * z krótkim fade in / fade out. Docelowo wybór
- * może przejąć logika projektu lub AI (Priorytet 4/8).
+ * Utwór losuje select-music.mjs spośród plików w public/music/
+ * i zapisuje do music.json. Gra przez całą rolkę z krótkim
+ * fade in / fade out. Gdy folder jest pusty, music.json ma
+ * file === null i rolka powstaje bez podkładu.
  *
  * Filmy są wyciszone (normalize-videos.mjs dodaje -an,
  * a VideoScene ustawia muted), więc dźwięk źródłowy
  * nie konkuruje z muzyką.
  */
-const MUSIC_TRACK =
-  "fresh-start.mp3";
+const MUSIC_TRACK = (
+  musicSelection as {
+    file: string | null;
+  }
+).file;
 
 const MUSIC_VOLUME = 0.25;
 
@@ -851,6 +856,10 @@ const MusicTrack: React.FC =
   () => {
     const totalFrames =
       getTotalDurationInFrames();
+
+    if (!MUSIC_TRACK) {
+      return null;
+    }
 
     return (
       <Audio

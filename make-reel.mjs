@@ -65,6 +65,11 @@ const steps = [
     command: "node",
     args: ["normalize-videos.mjs"],
   },
+  {
+    name: "Wybór podkładu muzycznego",
+    command: "node",
+    args: ["select-music.mjs"],
+  },
 ];
 
 for (const step of steps) {
