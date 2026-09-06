@@ -419,11 +419,11 @@ const PhotoScene: React.FC<{
     clamp(
       interpolate(
         productProminence,
-        [0.35, 0.65],
-        [1.35, 1],
+        [0.28, 0.62],
+        [1.6, 1],
       ),
       1,
-      1.35,
+      1.6,
     );
 
   /*

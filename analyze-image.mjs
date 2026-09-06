@@ -372,10 +372,55 @@ Odpowiedz wyłącznie JSON-em zgodnym ze schematem.
   };
 };
 
+const MAX_FRAGMENTS_PER_VIDEO = 2;
+
 const generateEditPlan = async ({
   images,
   videos,
 }) => {
+  /*
+   * Z każdego filmu podsuwamy planerowi tylko 2 najlepiej
+   * ocenione fragmenty. Wcześniej mógł wybrać dwa słabsze
+   * (np. boczny najazd + ujęcie z pustym murem) zamiast
+   * jednego mocnego, frontalnego.
+   */
+  const trimmedVideos =
+    videos.map((item) => {
+      const fragments =
+        Array.isArray(
+          item.fragments,
+        )
+          ? item.fragments
+          : [];
+
+      if (
+        fragments.length <=
+        MAX_FRAGMENTS_PER_VIDEO
+      ) {
+        return item;
+      }
+
+      return {
+        ...item,
+        fragments: [
+          ...fragments,
+        ]
+          .sort(
+            (a, b) =>
+              (Number(
+                b.qualityScore,
+              ) || 0) -
+              (Number(
+                a.qualityScore,
+              ) || 0),
+          )
+          .slice(
+            0,
+            MAX_FRAGMENTS_PER_VIDEO,
+          ),
+      };
+    });
+
   const media = [
     ...images.map(
       (item) => ({
@@ -406,7 +451,7 @@ const generateEditPlan = async ({
       }),
     ),
 
-    ...videos.flatMap(
+    ...trimmedVideos.flatMap(
       (item) => {
         const fragments =
           Array.isArray(
@@ -576,8 +621,12 @@ KOMPOZYCJA:
 
 JAKOŚĆ KADRU (używaj pól shotType, productProminence, deadSpace):
 
-- na OTWARCIE i ZAKOŃCZENIE wybieraj ujęcia z wysokim productProminence
-  (produkt wypełnia dużą część kadru) i niskim deadSpace,
+- na OTWARCIE i ZAKOŃCZENIE wybieraj ujęcie FRONTALNE, na którym brama
+  lub ogrodzenie wypełnia dużą część kadru — nigdy ujęcia bocznego,
+  oddalonego, „w perspektywie" wzdłuż płotu ani z dużym pierwszym planem
+  drogi / ziemi / muru,
+- dla filmu na otwarcie/zakończenie wybieraj fragment, którego opis mówi
+  o ujęciu frontalnym / symetrycznym / „produkt wypełnia kadr",
 - NIE otwieraj rolki ujęciem shotType="wide" ani żadnym z deadSpace > 0.4,
 - ujęć z deadSpace > 0.45 używaj tylko, gdy nie ma nic lepszego,
   i nigdy dwóch obok siebie,
@@ -598,6 +647,11 @@ FILMY:
 - jeśli na liście jest fragment filmowy z qualityScore >= 0.85,
   wykorzystaj przynajmniej jeden — ruch kamery ożywia rolkę
   i odróżnia ją od serii nieruchomych zdjęć,
+- jeśli WIĘKSZOŚĆ dostępnych zdjęć ma productProminence < 0.4
+  (produkt zajmuje mało kadru), a masz fragmenty wideo z
+  qualityScore >= 0.9 — oprzyj rolkę głównie na wideo (3-4 fragmenty),
+  a zdjęcia daj tylko jako krótkie przerywniki; na takim materiale
+  film jest zwykle jedynym ujęciem, gdzie brama wypełnia kadr,
 - nie wstawiaj kilku fragmentów wideo obok siebie ani słabszych
   fragmentów tylko po to, żeby w rolce było wideo,
 - fragment filmowy może trwać około 4-5 sekund, jeśli ujęcie na to zasługuje,

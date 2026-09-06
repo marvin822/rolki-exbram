@@ -1,39 +1,46 @@
 {
   "scenes": [
     {
-      "file": "26-08-25 15-31-24 5890.mov",
-      "fragmentId": "26-08-25 15-31-24 5890.mov#fragment-1",
-      "duration": 3.5000000000000004,
-      "start": 0.9,
-      "reason": "Silne, dynamiczne otwarcie — najwyższy qualityScore; ruch kamery ożywi rolkę i uniknie otwierania statycznym zdjęciem (produkt widoczny)."
+      "file": "26-08-13 14-07-06 5853.mov",
+      "fragmentId": "26-08-13 14-07-06 5853.mov#fragment-4",
+      "duration": 4.599999999999994,
+      "start": 50.2,
+      "reason": "Mocne otwarcie — najwyższa jakość, ruch kamery ożywia rolkę; fragment frontalny i przyciągający wzrok."
     },
     {
-      "file": "26-08-25 15-31-07 5888.jpg",
+      "file": "26-08-13 14-10-30 5858.jpg",
       "fragmentId": "",
-      "duration": 3.5,
+      "duration": 3,
       "start": 0,
-      "reason": "Kontekstowe ujęcie ogrodzenia z kamiennymi słupkami — różna perspektywa po ruchomym otwarciu, daje widzowi chwilę na obejrzenie detalu."
+      "reason": "Detal/kadr zbliżony na czarne kute ogrodzenie — zmiana perspektywy po filmie, zoomIn rekomendowany."
     },
     {
-      "file": "26-08-25 15-30-52 5887.jpg",
+      "file": "26-08-13 14-10-33 5859.jpg",
       "fragmentId": "",
-      "duration": 3.5,
+      "duration": 3,
       "start": 0,
-      "reason": "Inny kąt frontowej bramy i ciemnych lameli — kolejna perspektywa produktu, utrzymujemy tempo i pozwalamy na spokojne obejrzenie kadru."
+      "reason": "Inna perspektywa realizacji (dekoracyjne przęsła na białym murku) — kontrastuje z poprzednim ujęciem."
     },
     {
-      "file": "26-08-25 15-31-17 5889.jpg",
+      "file": "26-08-13 14-08-46 5854.mov",
+      "fragmentId": "26-08-13 14-08-46 5854.mov#fragment-2",
+      "duration": 3.999999999999999,
+      "start": 6.7,
+      "reason": "Ruch kamery w środku rolki ożywia montaż i pokazuje ogrodzenie w realnym kontekście."
+    },
+    {
+      "file": "26-08-13 14-11-18 5862.jpg",
       "fragmentId": "",
-      "duration": 3.5,
+      "duration": 3,
       "start": 0,
-      "reason": "Szerokie panele i kamienne słupki — kolejny kontekst realizacji, ujęcie dopełniające prezentację całości przed mocnym zamknięciem."
+      "reason": "Kolejne ujęcie bramy na białym murku — inna kompozycja, pokaz detalu i otoczenia."
     },
     {
-      "file": "26-08-25 15-31-24 5890.mov",
-      "fragmentId": "26-08-25 15-31-24 5890.mov#fragment-2",
-      "duration": 3.000000000000001,
-      "start": 5.47,
-      "reason": "Mocne zamknięcie z ruchem kamery — drugi fragment z wysoką jakością, da finalny, profesjonalny akcent przed planszą końcową."
+      "file": "26-08-13 14-10-15 5855.jpg",
+      "fragmentId": "",
+      "duration": 2.5,
+      "start": 0,
+      "reason": "Mocne zamknięcie — frontalny widok bramy wypełniający kadr; krótsze, by zmieścić całość w docelowym czasie."
     }
   ]
 }
