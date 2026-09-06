@@ -233,23 +233,24 @@ każda jako osobny akapit oddzielony pustą linią:
    Dopasuj końcówkę do materiału (np. nowoczesne ogrodzenie posesji,
    ogrodzenie z ażurowym panelem, brama z automatyką).
 
-2. KONKRETY REALIZACJI — 1-3 zdania. Wyciągnij z analizy konkretne cechy:
-   - rodzaj ogrodzenia (np. panelowe, ażurowe, poziome, nowoczesne),
-   - kolor (np. antracyt, czarny) — tylko jeśli wynika z analizy,
-   - materiał (np. stal, aluminium, blacha) — tylko jeśli wynika z analizy,
-   - rodzaj bramy / furtki (np. dwuskrzydłowa, przesuwna) — jeśli występuje,
-   - charakterystyczne rozwiązania (np. wycinany motyw drzewa, kamienne
-     słupki, podmurówka, spójna balustrada w tym samym wzorze).
+2. KONKRETY REALIZACJI — 1-2 zdania. Wybierz tylko 2-3 najbardziej
+   charakterystyczne cechy realizacji (np. rodzaj ogrodzenia, kolor,
+   wyróżniający detal, rodzaj bramy) i opisz je swobodnie, bez wyliczanki
+   i bez technicznego żargonu. Nie wymieniaj wszystkiego.
    Podawaj wyłącznie to, co potwierdza analiza. Nie zgaduj.
 
-3. KORZYŚĆ / EFEKT — jedno zdanie o tym, co ta realizacja daje właścicielowi
-   posesji (forma, spójny wygląd, prywatność, zabezpieczenie, trwałość,
-   dopasowanie do bryły domu). Nie "wykonaliśmy ogrodzenie", tylko efekt.
+3. KORZYŚĆ / EFEKT — jedno zdanie o tym, co ta realizacja daje właścicielom
+   posesji (spójny wygląd, prywatność, poczucie bezpieczeństwa, dopasowanie
+   do domu, po prostu ładny widok każdego dnia). Nie "wykonaliśmy ogrodzenie",
+   tylko efekt.
 
 W polu "description" NIE dodawaj: wezwania do działania (CTA), adresu strony,
 e-maila, telefonu ani hasztagów — dokleimy je osobno.
 
-Język polski, ton naturalny i konkretny, bez clickbaitu i bez wykrzykników.
+Język polski. Ton ciepły, przyjazny i osobisty — jakbyś z dumą i sympatią
+pokazywał udaną realizację komuś bliskiemu. Może paść miłe słowo pod adresem
+właścicieli albo efektu końcowego. Bez clickbaitu, bez nachalnej sprzedaży
+i bez wykrzykników.
 
 HASZTAGI (pole "hashtags"):
 - zwróć 3-6 hasztagów sensownych dla tej realizacji
