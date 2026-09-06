@@ -1,46 +1,39 @@
 {
   "scenes": [
     {
-      "file": "DSC_9947.jpg",
-      "fragmentId": "",
-      "duration": 4,
-      "start": 0,
-      "reason": "Mocne zbliżenie lameli (wysokie productProminence, niskie deadSpace) — zdecydowane, atrakcyjne otwarcie; zastosować delikatny zoomIn."
+      "file": "26-08-25 15-31-24 5890.mov",
+      "fragmentId": "26-08-25 15-31-24 5890.mov#fragment-1",
+      "duration": 3.5000000000000004,
+      "start": 0.9,
+      "reason": "Silne, dynamiczne otwarcie — najwyższy qualityScore; ruch kamery ożywi rolkę i uniknie otwierania statycznym zdjęciem (produkt widoczny)."
     },
     {
-      "file": "DSC_9925.jpg",
+      "file": "26-08-25 15-31-07 5888.jpg",
       "fragmentId": "",
       "duration": 3.5,
       "start": 0,
-      "reason": "Szerokie ujęcie kontekstowe pokazujące bramę i słupki — różnorodna perspektywa po otwarciu; panRight rekomendowany."
+      "reason": "Kontekstowe ujęcie ogrodzenia z kamiennymi słupkami — różna perspektywa po ruchomym otwarciu, daje widzowi chwilę na obejrzenie detalu."
     },
     {
-      "file": "DSC_9930.jpg",
+      "file": "26-08-25 15-30-52 5887.jpg",
       "fragmentId": "",
       "duration": 3.5,
       "start": 0,
-      "reason": "Zbliżenie detalu (zawias/zamek) — podkreślenie jakości wykonania i solidności."
+      "reason": "Inny kąt frontowej bramy i ciemnych lameli — kolejna perspektywa produktu, utrzymujemy tempo i pozwalamy na spokojne obejrzenie kadru."
     },
     {
-      "file": "DSC_9938.jpg",
+      "file": "26-08-25 15-31-17 5889.jpg",
       "fragmentId": "",
-      "duration": 3,
+      "duration": 3.5,
       "start": 0,
-      "reason": "Kadr pokazujący ogólny front ogrodzenia — daje kontekst realizacji i skalę."
+      "reason": "Szerokie panele i kamienne słupki — kolejny kontekst realizacji, ujęcie dopełniające prezentację całości przed mocnym zamknięciem."
     },
     {
-      "file": "DSC_9957.jpg",
-      "fragmentId": "",
-      "duration": 2.5,
-      "start": 0,
-      "reason": "Poziome przęsło przed domem — dodatkowe, spokojniejsze ujęcie pokazujące materiał i rytm lameli."
-    },
-    {
-      "file": "DSC_9918.jpg",
-      "fragmentId": "",
-      "duration": 3,
-      "start": 0,
-      "reason": "Zbliżenie detalu z wysoką ekspozycją produktu i niskim deadSpace — mocne zakończenie materiału przed planszą."
+      "file": "26-08-25 15-31-24 5890.mov",
+      "fragmentId": "26-08-25 15-31-24 5890.mov#fragment-2",
+      "duration": 3.000000000000001,
+      "start": 5.47,
+      "reason": "Mocne zamknięcie z ruchem kamery — drugi fragment z wysoką jakością, da finalny, profesjonalny akcent przed planszą końcową."
     }
   ]
 }

@@ -36,6 +36,7 @@ type PhotoAnalysis = {
   focusY: number;
   recommendedMotion: PhotoMotion;
   motionStrength: number;
+  productProminence?: number;
   confidence: number;
 };
 
@@ -152,6 +153,7 @@ const getAnalysisForImage = (
       recommendedMotion:
         "zoomIn",
       motionStrength: 0.5,
+      productProminence: 0.6,
       confidence: 0,
     };
   }
@@ -317,8 +319,12 @@ const getSafePanAmount = (
       (2 * scale)) *
     100;
 
+  /*
+   * Zapas: transformOrigin bywa poza środkiem (punkt skupienia),
+   * więc zostawiamy margines na asymetryczny zwis obrazu.
+   */
   return (
-    geometricLimit * 0.85
+    geometricLimit * 0.7
   );
 };
 
@@ -389,18 +395,36 @@ const PhotoScene: React.FC<{
           1,
         );
 
-  const isPan =
-    motion === "panLeft" ||
-    motion === "panRight";
+  /*
+   * Kadrowanie obracamy wokół punktu skupienia (produkt),
+   * a nie środka zdjęcia — zarówno przy zoomie, jak i panoramie.
+   */
+  const transformOrigin = `${focusX}% ${focusY}%`;
 
   /*
-   * Przy zoomie obracamy skalowanie wokół punktu skupienia.
-   * Przy panoramie zostawiamy środek, żeby nie zaburzać
-   * bezpiecznego zakresu przesuwu (getSafePanAmount).
+   * Zdjęcia, na których ogrodzenie zajmuje małą część kadru
+   * (niski productProminence — dużo podjazdu, kostki, nieba,
+   * trawnika), dostają bazowe przybliżenie, żeby produkt
+   * wypełnił kadr. productProminence >= 0.65 → bez dodatku.
    */
-  const transformOrigin = isPan
-    ? "center center"
-    : `${focusX}% ${focusY}%`;
+  const productProminence =
+    clamp(
+      imageAnalysis.productProminence ??
+        0.6,
+      0,
+      1,
+    );
+
+  const baseCropScale =
+    clamp(
+      interpolate(
+        productProminence,
+        [0.35, 0.65],
+        [1.35, 1],
+      ),
+      1,
+      1.35,
+    );
 
   /*
    * P3: dłuższe ujęcie dostaje większy dystans ruchu, żeby
@@ -430,12 +454,19 @@ const PhotoScene: React.FC<{
   let scale = 1;
   let translateX = 0;
 
+  const panBaseScale =
+    Math.max(
+      PHOTO_SCALE,
+      baseCropScale,
+    );
+
   switch (motion) {
     case "zoomIn": {
       scale =
-        1 +
-        zoomAmount *
-          progress;
+        baseCropScale *
+        (1 +
+          zoomAmount *
+            progress);
 
       break;
     }
@@ -447,16 +478,17 @@ const PhotoScene: React.FC<{
        * czarnych krawędzi.
        */
       scale =
-        1 +
-        zoomAmount *
-          (1 - progress);
+        baseCropScale *
+        (1 +
+          zoomAmount *
+            (1 - progress));
 
       break;
     }
 
     case "panLeft": {
       scale =
-        PHOTO_SCALE;
+        panBaseScale;
 
       const safePan =
         getSafePanAmount(
@@ -484,7 +516,7 @@ const PhotoScene: React.FC<{
 
     case "panRight": {
       scale =
-        PHOTO_SCALE;
+        panBaseScale;
 
       const safePan =
         getSafePanAmount(
