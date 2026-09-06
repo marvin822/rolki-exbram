@@ -5,42 +5,42 @@
       "fragmentId": "",
       "duration": 4,
       "start": 0,
-      "reason": "Mocne zbliżenie lameli — świetne, ekspresyjne otwarcie; wysoka ekspozycja produktu i niski deadSpace."
+      "reason": "Mocne zbliżenie lameli (wysokie productProminence, niskie deadSpace) — zdecydowane, atrakcyjne otwarcie; zastosować delikatny zoomIn."
     },
     {
       "file": "DSC_9925.jpg",
       "fragmentId": "",
-      "duration": 3.25,
+      "duration": 3.5,
       "start": 0,
-      "reason": "Ujęcie kontekstowe z panoramą — pokazuje ogrodzenie przy domu, dobra zmiana perspektywy po zbliżeniu."
-    },
-    {
-      "file": "DSC_9918.jpg",
-      "fragmentId": "",
-      "duration": 3,
-      "start": 0,
-      "reason": "Detal lamel i betonowych słupków — podkreślenie jakości wykonania i materiału."
-    },
-    {
-      "file": "DSC_9957.jpg",
-      "fragmentId": "",
-      "duration": 3,
-      "start": 0,
-      "reason": "Perspektywa przęsła z widoczną bramą i słupkami — pokaz integracji elementów realizacji."
-    },
-    {
-      "file": "DSC_9938.jpg",
-      "fragmentId": "",
-      "duration": 3.25,
-      "start": 0,
-      "reason": "Kolejne ujęcie kontekstowe dla rytmu i skali projektu — różnorodność kadrów przed finałem."
+      "reason": "Szerokie ujęcie kontekstowe pokazujące bramę i słupki — różnorodna perspektywa po otwarciu; panRight rekomendowany."
     },
     {
       "file": "DSC_9930.jpg",
       "fragmentId": "",
       "duration": 3.5,
       "start": 0,
-      "reason": "Mocne zamknięcie: zbliżenie zawiasu/ zamka — wysokiej jakości detal, niski deadSpace, atrakcyjny finał."
+      "reason": "Zbliżenie detalu (zawias/zamek) — podkreślenie jakości wykonania i solidności."
+    },
+    {
+      "file": "DSC_9938.jpg",
+      "fragmentId": "",
+      "duration": 3,
+      "start": 0,
+      "reason": "Kadr pokazujący ogólny front ogrodzenia — daje kontekst realizacji i skalę."
+    },
+    {
+      "file": "DSC_9957.jpg",
+      "fragmentId": "",
+      "duration": 2.5,
+      "start": 0,
+      "reason": "Poziome przęsło przed domem — dodatkowe, spokojniejsze ujęcie pokazujące materiał i rytm lameli."
+    },
+    {
+      "file": "DSC_9918.jpg",
+      "fragmentId": "",
+      "duration": 3,
+      "start": 0,
+      "reason": "Zbliżenie detalu z wysoką ekspozycją produktu i niskim deadSpace — mocne zakończenie materiału przed planszą."
     }
   ]
 }

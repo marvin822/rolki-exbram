@@ -579,6 +579,11 @@ ZDJĘCIA:
 FILMY:
 
 - wykorzystuj tylko wtedy, gdy są atrakcyjne i sprzedażowo przydatne,
+- jeśli na liście jest fragment filmowy z qualityScore >= 0.85,
+  wykorzystaj przynajmniej jeden — ruch kamery ożywia rolkę
+  i odróżnia ją od serii nieruchomych zdjęć,
+- nie wstawiaj kilku fragmentów wideo obok siebie ani słabszych
+  fragmentów tylko po to, żeby w rolce było wideo,
 - fragment filmowy może trwać około 4-5 sekund, jeśli ujęcie na to zasługuje,
 - wybieraj konkretny fragment z listy fragmentów filmu,
 - NIE wymyślaj nowego fragmentu,
