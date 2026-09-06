@@ -1,46 +1,39 @@
 {
   "scenes": [
     {
-      "file": "26-07-06 13-44-11 5676.jpg",
+      "file": "26-07-01 09-42-13 5650.jpg",
       "fragmentId": "",
-      "duration": 4.5,
+      "duration": 4,
       "start": 0,
-      "reason": "Otwarcie: mocne zbliżenie na lamele (najwyższe productProminence) — przyciąga uwagę."
+      "reason": "Mocne frontalne otwarcie — detal poręczy z najwyższym productProminence; przyciąga uwagę."
     },
     {
-      "file": "26-07-06 13-43-01 5670.jpg",
+      "file": "26-07-01 09-42-26 5652.jpg",
       "fragmentId": "",
-      "duration": 3,
+      "duration": 3.5,
       "start": 0,
-      "reason": "Szerszy kontekst: panel osadzony między słupkami, ruch panLeft dla dynamiki."
+      "reason": "Szersze wejście — inna perspektywa niż otwarcie, pokazuje produkt w kontekście schodów."
     },
     {
-      "file": "26-07-06 13-43-11 5671.jpg",
+      "file": "26-07-01 09-42-46 5653.jpg",
       "fragmentId": "",
-      "duration": 3,
+      "duration": 3.5,
       "start": 0,
-      "reason": "Detal: zbliżenie na poziome lamele — podkreślenie jakości wykonania."
+      "reason": "Ujęcie balkonowe — różnorodność perspektyw, daje oddech między zdjęciami wejścia."
     },
     {
-      "file": "26-07-06 13-43-54 5675.jpg",
+      "file": "26-07-01 09-42-49 5654.jpg",
       "fragmentId": "",
-      "duration": 2.5,
+      "duration": 3.5,
       "start": 0,
-      "reason": "Kontekst z otoczeniem (mur i zieleń) — pokazuje montaż w realnym otoczeniu."
+      "reason": "Taras — detal poręczy w innym otoczeniu, uzupełnia całość realizacji."
     },
     {
-      "file": "26-07-06 13-43-47 5674.jpg",
+      "file": "26-07-01 09-42-20 5651.jpg",
       "fragmentId": "",
-      "duration": 2.5,
+      "duration": 3.5,
       "start": 0,
-      "reason": "Detal furtki między murowanymi słupkami — akcent na wykończenie."
-    },
-    {
-      "file": "26-07-06 13-43-31 5672.jpg",
-      "fragmentId": "",
-      "duration": 3,
-      "start": 0,
-      "reason": "Zakończenie: frontalne przęsło / brama — mocne, reprezentacyjne ujęcie realizacji."
+      "reason": "Mocne zamknięcie rolki — wejście domu z wyraźną poręczą; frontalne, spójne zakończenie realizacji."
     }
   ]
 }

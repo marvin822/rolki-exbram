@@ -64,7 +64,7 @@ const MIN_VIDEO_FRAGMENT_QUALITY = 0.8;
  * pola albo istotnie prompt — starsze wpisy w analysis.json
  * zostaną wtedy przeanalizowane od nowa zamiast wziąć z cache.
  */
-const ANALYSIS_SCHEMA_VERSION = 3;
+const ANALYSIS_SCHEMA_VERSION = 4;
 
 const getMimeType = (
   extension,
@@ -132,6 +132,146 @@ const getBase64Image = (
   return fs
     .readFileSync(filePath)
     .toString("base64");
+};
+
+/*
+ * Data wykonania zdjęcia z EXIF (DateTimeOriginal, tag 0x9003).
+ *
+ * Służy do rozpoznania, że w jednym folderze leżą zdjęcia z KILKU
+ * realizacji — sesje robione o różnych porach tworzą wyraźne grupy.
+ * Bez tego planer sklejał w jedną rolkę dwie różne posesje.
+ */
+const getTakenAt = (
+  filePath,
+) => {
+  try {
+    const buffer =
+      fs.readFileSync(filePath);
+
+    for (
+      let i = 2;
+      i < buffer.length - 4;
+
+    ) {
+      if (buffer[i] !== 0xff) {
+        break;
+      }
+
+      const marker =
+        buffer[i + 1];
+
+      const length =
+        buffer.readUInt16BE(
+          i + 2,
+        );
+
+      if (
+        marker === 0xe1 &&
+        buffer.toString(
+          "ascii",
+          i + 4,
+          i + 8,
+        ) === "Exif"
+      ) {
+        const tiff = i + 10;
+
+        const little =
+          buffer.toString(
+            "ascii",
+            tiff,
+            tiff + 2,
+          ) === "II";
+
+        const readU16 = (
+          offset,
+        ) =>
+          little
+            ? buffer.readUInt16LE(
+                offset,
+              )
+            : buffer.readUInt16BE(
+                offset,
+              );
+
+        const readU32 = (
+          offset,
+        ) =>
+          little
+            ? buffer.readUInt32LE(
+                offset,
+              )
+            : buffer.readUInt32BE(
+                offset,
+              );
+
+        const readDate = (
+          ifd,
+        ) => {
+          const count =
+            readU16(ifd);
+
+          for (
+            let k = 0;
+            k < count;
+            k++
+          ) {
+            const entry =
+              ifd + 2 + k * 12;
+
+            const tag =
+              readU16(entry);
+
+            if (
+              tag === 0x9003 ||
+              tag === 0x0132
+            ) {
+              const offset =
+                tiff +
+                readU32(
+                  entry + 8,
+                );
+
+              return buffer
+                .toString(
+                  "ascii",
+                  offset,
+                  offset + 19,
+                )
+                .trim();
+            }
+
+            if (
+              tag === 0x8769
+            ) {
+              const sub =
+                readDate(
+                  tiff +
+                    readU32(
+                      entry + 8,
+                    ),
+                );
+
+              if (sub) {
+                return sub;
+              }
+            }
+          }
+
+          return null;
+        };
+
+        return readDate(
+          tiff + readU32(tiff + 4),
+        );
+      }
+
+      i += 2 + length;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 };
 
 const getFilesFromDirectory = (
@@ -381,6 +521,8 @@ Odpowiedz wyłącznie JSON-em zgodnym ze schematem.
   return {
     ...result,
     file,
+    takenAt:
+      getTakenAt(filePath),
     schemaVersion:
       ANALYSIS_SCHEMA_VERSION,
   };
@@ -459,6 +601,9 @@ const generateEditPlan = async ({
 
         deadSpace:
           item.deadSpace,
+
+        takenAt:
+          item.takenAt,
 
         confidence:
           item.confidence,
@@ -622,6 +767,18 @@ CEL DŁUGOŚCI:
 - nie skracaj rolki tylko dlatego, że można użyć mniejszej liczby scen,
 - jednocześnie nigdy nie dodawaj słabego materiału wyłącznie po to, żeby osiągnąć długość,
 - jakość i atrakcyjność są ważniejsze niż dokładne osiągnięcie czasu.
+
+JEDNA REALIZACJA (sprawdź to NAJPIERW):
+
+- rolka pokazuje JEDNĄ realizację u JEDNEGO klienta,
+- w folderze mogą leżeć zdjęcia z kilku różnych posesji — rozpoznasz to
+  po polu takenAt (sesje robione o różnych porach/dniach tworzą grupy)
+  oraz po opisach (inny budynek, inne otoczenie, inny typ produktu),
+- jeśli materiały dzielą się na kilka realizacji, wybierz TĘ JEDNĄ,
+  która ma najwięcej mocnych ujęć, i zignoruj pozostałe — nawet jeśli
+  przez to rolka będzie krótsza od docelowej długości,
+- NIGDY nie mieszaj w jednej rolce dwóch różnych posesji: widz zobaczy
+  wtedy kilka różnych budynków i przekaz się rozjeżdża.
 
 KOMPOZYCJA:
 
@@ -1199,6 +1356,33 @@ const main = async () => {
       );
     },
   );
+
+  /*
+   * Wypisujemy materiały pominięte przez planer — najczęściej to
+   * słabsze ujęcia, ale jeśli w folderze były dwie realizacje,
+   * to właśnie tu widać, że druga została świadomie odrzucona.
+   */
+  const usedFiles = new Set(
+    editPlan.scenes.map(
+      (scene) => scene.file,
+    ),
+  );
+
+  const skipped =
+    imageFiles.filter(
+      (file) =>
+        !usedFiles.has(file),
+    );
+
+  if (skipped.length > 0) {
+    console.log(
+      `\nNiewykorzystane zdjęcia (${skipped.length}):`,
+    );
+
+    skipped.forEach((file) =>
+      console.log(`- ${file}`),
+    );
+  }
 };
 
 main().catch(
