@@ -2,6 +2,18 @@ import { spawnSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
+/*
+ * Opis do rolki (opis.txt) powstaje domyślnie po renderze.
+ * Można go pominąć flagą --skip-opis (alias --bez-opisu).
+ */
+const skipDescription =
+  process.argv.includes(
+    "--skip-opis",
+  ) ||
+  process.argv.includes(
+    "--bez-opisu",
+  );
+
 const steps = [
   {
     name: "Wyciąganie klatek z filmów",
@@ -198,6 +210,43 @@ if (
   );
 }
 
+if (!skipDescription) {
+  console.log(
+    "\n========================================",
+  );
+
+  console.log(
+    "Opis do rolki",
+  );
+
+  console.log(
+    "========================================\n",
+  );
+
+  const descriptionResult =
+    spawnSync(
+      "node",
+      ["generate-description.mjs"],
+      {
+        stdio: "inherit",
+        shell: true,
+      },
+    );
+
+  if (
+    descriptionResult.status !== 0
+  ) {
+    console.error(
+      "\nBłąd w kroku: Opis do rolki",
+    );
+
+    process.exit(
+      descriptionResult.status ??
+        1,
+    );
+  }
+}
+
 console.log(
   "\n========================================",
 );
@@ -217,3 +266,13 @@ console.log(
 console.log(
   "./output/reel.mp4",
 );
+
+if (!skipDescription) {
+  console.log(
+    "\nOpis do rolki:",
+  );
+
+  console.log(
+    "./opis.txt",
+  );
+}
