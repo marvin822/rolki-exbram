@@ -348,6 +348,26 @@ const PhotoScene: React.FC<{
     );
 
   /*
+   * Punkt skupienia z analizy AI — zwykle produkt
+   * (ogrodzenie/brama) leży niżej niż środek kadru,
+   * a nad nim jest niebo. Kadrujemy zdjęcie tak, aby
+   * ten punkt został w kadrze zamiast geometrycznego środka.
+   */
+  const focusX =
+    clamp(
+      imageAnalysis.focusX,
+      0,
+      100,
+    );
+
+  const focusY =
+    clamp(
+      imageAnalysis.focusY,
+      0,
+      100,
+    );
+
+  /*
    * Ruch zdjęcia trwa przez właściwy czas
    * zdjęcia + czas przejścia.
    *
@@ -368,6 +388,19 @@ const PhotoScene: React.FC<{
             (animationFrames - 1),
           1,
         );
+
+  const isPan =
+    motion === "panLeft" ||
+    motion === "panRight";
+
+  /*
+   * Przy zoomie obracamy skalowanie wokół punktu skupienia.
+   * Przy panoramie zostawiamy środek, żeby nie zaburzać
+   * bezpiecznego zakresu przesuwu (getSafePanAmount).
+   */
+  const transformOrigin = isPan
+    ? "center center"
+    : `${focusX}% ${focusY}%`;
 
   let scale = 1;
   let translateX = 0;
@@ -478,12 +511,12 @@ const PhotoScene: React.FC<{
           height: "100%",
           objectFit:
             "cover",
+          objectPosition: `${focusX}% ${focusY}%`,
           transform: `
             translateX(${translateX}%)
             scale(${scale})
           `,
-          transformOrigin:
-            "center center",
+          transformOrigin,
         }}
       />
     </AbsoluteFill>
