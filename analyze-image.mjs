@@ -59,6 +59,13 @@ const VIDEO_EXTENSIONS = [
  */
 const MIN_VIDEO_FRAGMENT_QUALITY = 0.8;
 
+/*
+ * Wersja schematu analizy zdjęcia. Zwiększ, gdy zmienią się
+ * pola albo istotnie prompt — starsze wpisy w analysis.json
+ * zostaną wtedy przeanalizowane od nowa zamiast wziąć z cache.
+ */
+const ANALYSIS_SCHEMA_VERSION = 2;
+
 const getMimeType = (
   extension,
 ) => {
@@ -231,8 +238,13 @@ Oceń dodatkowo:
   - "context" — ogrodzenie/brama wyraźnie widoczne razem z otoczeniem (dom, słupki),
   - "detail" — zbliżenie na przęsła / lamele / bramę, wciąż jasno widać, że to ogrodzenie,
   - "macro" — bardzo ciasny kadr na pojedynczy element (śruba, wspornik, narożnik) bez kontekstu,
-- productProminence 0-1 — jak dużą część kadru zajmuje produkt i jak bardzo dominuje,
-- deadSpace 0-1 — jaka część kadru to niebo / goła ziemia / asfalt / pusta ściana / elementy nieistotne.
+- productProminence 0-1 — jaką część WYSOKOŚCI kadru zajmuje samo ogrodzenie/brama
+  i jak bardzo dominuje. Jeśli ogrodzenie to poziomy pas zajmujący mniej niż
+  ~1/3 wysokości zdjęcia, productProminence <= 0.5.
+- deadSpace 0-1 — jaka część kadru to powierzchnia NIEBĘDĄCA produktem EXBRAM:
+  niebo, goła ziemia, trawnik, asfalt, droga, chodnik, podjazd, kostka brukowa,
+  pusta ściana, dach, samochody. Ładna kostka albo równy podjazd to nadal
+  deadSpace — liczy się tylko to, że nie jest to ogrodzenie ani brama.
 
 Zasady:
 - zoomIn stosuj, gdy główny obiekt znajduje się centralnie lub względnie centralnie,
@@ -241,8 +253,10 @@ Zasady:
 - panRight stosuj, gdy interesujący obiekt znajduje się bardziej po prawej stronie,
 - unikaj agresywnego ruchu,
 - focusX i focusY podawaj jako procenty 0-100,
-- jeśli ogrodzenie jest poziomym pasem w dolnej części kadru, ustaw focusY
-  w stronę ogrodzenia (zwykle 60-80), a nie na środek,
+- focusX/focusY ustaw DOKŁADNIE na ogrodzeniu/bramie, gdziekolwiek jest w kadrze:
+  gdy produkt jest wysoko, focusY może być 25-40; gdy nisko — 60-80; nigdy nie
+  zostawiaj 50 „na wszelki wypadek" i nigdy nie celuj w dużą powierzchnię
+  podjazdu, kostki, drogi, trawnika, dachu ani nieba,
 - motionStrength podawaj jako wartość 0-1.
 
 Odpowiedz wyłącznie JSON-em zgodnym ze schematem.
@@ -353,6 +367,8 @@ Odpowiedz wyłącznie JSON-em zgodnym ze schematem.
   return {
     ...result,
     file,
+    schemaVersion:
+      ANALYSIS_SCHEMA_VERSION,
   };
 };
 
@@ -994,12 +1010,15 @@ const main = async () => {
       );
 
     /*
-     * Cache jest ważny tylko, gdy zawiera wszystkie pola,
-     * których dziś potrzebuje planer (shotType / productProminence
-     * / deadSpace). Starsze wpisy analizujemy ponownie.
+     * Cache jest ważny tylko, gdy pochodzi z aktualnej wersji
+     * schematu analizy. Po zmianie pól lub istotnej zmianie
+     * promptu (ANALYSIS_SCHEMA_VERSION) starsze wpisy są
+     * analizowane od nowa.
      */
     const cacheComplete =
       cached &&
+      cached.schemaVersion ===
+        ANALYSIS_SCHEMA_VERSION &&
       typeof cached.shotType ===
         "string" &&
       typeof cached.productProminence ===
