@@ -16,5 +16,6 @@ video-frames-detail
 # FFmpeg-normalized clips, rebuilt from public/media/videos
 public/processed
 
-# Large source footage kept locally, not in Git history
-public/media/videos
+# Wejściowe zdjęcia i filmy — materiał per realizacja, trzymany
+# lokalnie, nie synchronizowany przez Git
+public/media/
