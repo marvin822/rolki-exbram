@@ -20,7 +20,7 @@ const client = new OpenAI({
 const DETAIL_FRAME_COUNT = 12;
 const SAFE_END_MARGIN = 0.08;
 const MAX_CANDIDATES = 4;
-const CANDIDATE_DURATION = 4;
+const CANDIDATE_DURATION = 5;
 
 function getVideoDuration(filePath) {
   const output = execFileSync(
@@ -191,7 +191,7 @@ BARDZO WAŻNE:
 - Jeżeli cały film jest słaby, zwróć mniej kandydatów.
 - Nie wymyślaj momentów, których nie widać.
 - Czas startu powinien znajdować się w pobliżu analizowanych klatek.
-- Kandydat powinien mieć zwykle około 3-4 sekund.
+- Kandydat powinien mieć zwykle około 4-5 sekund.
 - Możesz podać krótszy lub dłuższy zakres, jeśli sytuacja tego wymaga.
 - Nie wychodź poza długość filmu.
 
@@ -344,8 +344,8 @@ function normalizeCandidate(
   }
 
   duration = Math.max(
-    1.5,
-    Math.min(5, duration),
+    2,
+    Math.min(6, duration),
   );
 
   start = Math.max(
@@ -500,7 +500,7 @@ function extractDetailFrames(
   );
 
   duration = Math.min(
-    5,
+    6,
     duration,
   );
 
@@ -707,9 +707,9 @@ DODATKOWE ZASADY:
 - refinedEnd <= rzeczywista długość filmu.
 - refinedEnd > refinedStart.
 - refinedDuration = refinedEnd - refinedStart.
-- Najczęściej wybieraj około 2.5-4 sekund.
+- Najczęściej wybieraj około 3.5-5 sekund.
 - Jeżeli dobry moment trwa krócej, wybierz krótszy fragment.
-- Jeżeli dobry moment jest dłuższy, możesz wybrać maksymalnie około 5 sekund.
+- Jeżeli dobry moment jest dłuższy, możesz wybrać maksymalnie około 6 sekund.
 - Nie wymuszaj długości kosztem jakości.
 
 Zwróć WYŁĄCZNIE JSON.
@@ -875,12 +875,12 @@ function createFallbackFragment(
 
   const duration =
     Math.min(
-      5,
+      6,
       Math.max(
         1,
         Number(
           overview.recommendedDuration,
-        ) || 4,
+        ) || 5,
       ),
       Math.max(
         0.1,

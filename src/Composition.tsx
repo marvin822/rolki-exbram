@@ -95,9 +95,11 @@ const MUSIC_VOLUME = 0.25;
 
 const MUSIC_FADE_FRAMES = 18;
 
-const PHOTO_SCALE = 1.15;
-const BASE_ZOOM = 0.08;
-const MAX_ZOOM = 0.12;
+// Dłuższe ujęcia (rolka 20-25 s) — nieco większy ruch,
+// żeby dłuższy kadr nie wydawał się zamrożony.
+const PHOTO_SCALE = 1.18;
+const BASE_ZOOM = 0.1;
+const MAX_ZOOM = 0.16;
 
 const analysisData =
   analysis as PhotoAnalysis[];
