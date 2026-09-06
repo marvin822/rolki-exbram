@@ -641,9 +641,16 @@ JAKOŚĆ KADRU (używaj pól shotType, productProminence, deadSpace):
   drogi / ziemi / muru,
 - dla filmu na otwarcie/zakończenie wybieraj fragment, którego opis mówi
   o ujęciu frontalnym / symetrycznym / „produkt wypełnia kadr",
-- NIE otwieraj rolki ujęciem shotType="wide" ani żadnym z deadSpace > 0.4,
-- ujęć z deadSpace > 0.45 używaj tylko, gdy nie ma nic lepszego,
+- oceniaj productProminence i deadSpace WZGLĘDNIE, porównując materiały
+  między sobą w tym zestawie — progi bezwzględne nie mają sensu, bo przy
+  ogrodzeniu na murku deadSpace bywa wysoki dla wszystkich ujęć,
+- na otwarcie weź materiał z NAJWYŻSZYM productProminence w zestawie;
+  nigdy nie otwieraj ujęciem shotType="wide" ani takim z najgorszym
+  wynikiem w zestawie,
+- materiałów z dolnej połowy rankingu (niski productProminence, wysoki
+  deadSpace) użyj tylko, jeśli brakuje scen do docelowej długości,
   i nigdy dwóch obok siebie,
+- lepiej dać 5 mocnych ujęć trochę dłuższych niż dołożyć dwa słabe,
 - shotType="macro" użyj maksymalnie raz w całej rolce i nigdy jako
   pierwsze ani ostatnie ujęcie,
 - preferuj shotType="context" i "detail"; "wide" najwyżej jedno,

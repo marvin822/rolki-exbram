@@ -333,6 +333,19 @@ const main = async () => {
     console.log(
       "Nie znaleziono klatek filmów.",
     );
+
+    /*
+     * Zestaw bez filmów (same zdjęcia). Czyścimy analizę wideo,
+     * żeby nie został po poprzednim zestawie wpis wskazujący na
+     * nieistniejący już plik — inaczej kolejne kroki próbują go
+     * czytać i sypią błędami.
+     */
+    fs.writeFileSync(
+      videoAnalysisPath,
+      "[]\n",
+      "utf8",
+    );
+
     process.exit(0);
   }
 

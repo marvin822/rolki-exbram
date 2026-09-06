@@ -1,46 +1,46 @@
 {
   "scenes": [
     {
-      "file": "26-08-13 14-07-06 5853.mov",
-      "fragmentId": "26-08-13 14-07-06 5853.mov#fragment-1",
-      "duration": 3.5,
-      "start": 3,
-      "reason": "Otwarcie mocnym, frontalnym fragmentem wideo — ruch ożywia rolkę, brama wypełnia kadr."
+      "file": "26-07-06 13-44-11 5676.jpg",
+      "fragmentId": "",
+      "duration": 4.5,
+      "start": 0,
+      "reason": "Otwarcie: mocne zbliżenie na lamele (najwyższe productProminence) — przyciąga uwagę."
     },
     {
-      "file": "26-08-13 14-11-11 5861.jpg",
+      "file": "26-07-06 13-43-01 5670.jpg",
       "fragmentId": "",
       "duration": 3,
       "start": 0,
-      "reason": "Detal balustrady — zróżnicowanie perspektyw, spokojne tempo pozwala obejrzeć wykonanie."
+      "reason": "Szerszy kontekst: panel osadzony między słupkami, ruch panLeft dla dynamiki."
     },
     {
-      "file": "26-08-13 14-10-33 5859.jpg",
+      "file": "26-07-06 13-43-11 5671.jpg",
       "fragmentId": "",
       "duration": 3,
       "start": 0,
-      "reason": "Dekoracyjne przęsła — detal ozdób, kontrastuje z ujęciami całości."
+      "reason": "Detal: zbliżenie na poziome lamele — podkreślenie jakości wykonania."
     },
     {
-      "file": "26-08-13 14-10-30 5857.jpg",
+      "file": "26-07-06 13-43-54 5675.jpg",
+      "fragmentId": "",
+      "duration": 2.5,
+      "start": 0,
+      "reason": "Kontekst z otoczeniem (mur i zieleń) — pokazuje montaż w realnym otoczeniu."
+    },
+    {
+      "file": "26-07-06 13-43-47 5674.jpg",
+      "fragmentId": "",
+      "duration": 2.5,
+      "start": 0,
+      "reason": "Detal furtki między murowanymi słupkami — akcent na wykończenie."
+    },
+    {
+      "file": "26-07-06 13-43-31 5672.jpg",
       "fragmentId": "",
       "duration": 3,
       "start": 0,
-      "reason": "Kute ogrodzenie z furtką — kolejny detal pokazujący jakość wykonania."
-    },
-    {
-      "file": "26-08-13 14-10-24 5856.jpg",
-      "fragmentId": "",
-      "duration": 3,
-      "start": 0,
-      "reason": "Szersze ujęcie realizacji przy domu — kontekst i skala projektu."
-    },
-    {
-      "file": "26-08-13 14-07-06 5853.mov",
-      "fragmentId": "26-08-13 14-07-06 5853.mov#fragment-4",
-      "duration": 3.5,
-      "start": 52.5,
-      "reason": "Zamknięcie mocnym fragmentem wideo — frontalne, efektowne ujęcie realizacji."
+      "reason": "Zakończenie: frontalne przęsło / brama — mocne, reprezentacyjne ujęcie realizacji."
     }
   ]
 }
