@@ -228,10 +228,19 @@ ${JSON.stringify(
 Pole "description" ma zawierać DOKŁADNIE trzy części, jedna po drugiej,
 każda jako osobny akapit oddzielony pustą linią:
 
-1. HOOK — jedno zdanie, które zatrzymuje uwagę i mówi, co widzimy.
-   Wzór: "Kolejna realizacja EXBRAM — tym razem <co to jest>."
-   Dopasuj końcówkę do materiału (np. nowoczesne ogrodzenie posesji,
-   ogrodzenie z ażurowym panelem, brama z automatyką).
+1. HOOK — jedno żywe zdanie (maksymalnie dwa krótkie), które od razu
+   wciąga i sprawia, że czytelnik chce czytać dalej. Ma mieć polot:
+   budować ciekawość, emocję albo mały obrazek w głowie. NIE może
+   brzmieć jak sucha notka prasowa — zwroty w stylu "Kolejna
+   realizacja...", "Prezentujemy...", "Zrealizowaliśmy...",
+   "Oto nasza..." są zakazane.
+   Nawiąż do tego, co widać w materiale — detalu, charakteru domu,
+   wrażenia — ale nie zdradzaj od razu wszystkiego.
+   Za każdym razem szukaj świeżego ujęcia, nie powielaj schematu.
+   Bez clickbaitu i pustych superlatyw ("najlepsze", "wymarzone").
+   Przykładowe KIERUNKI (nie kopiuj ich, potraktuj jako inspirację
+   nastroju): drobny detal, który zmienia całość; dom, który dostał
+   wreszcie właściwą oprawę; widok, przy którym chce się zwolnić krok.
 
 2. KONKRETY REALIZACJI — 1-2 zdania. Wybierz tylko 2-3 najbardziej
    charakterystyczne cechy realizacji (np. rodzaj ogrodzenia, kolor,
