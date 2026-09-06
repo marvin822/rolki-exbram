@@ -1,5 +1,4 @@
 import fs from "fs";
-import os from "os";
 import path from "path";
 import { spawnSync } from "child_process";
 
@@ -144,21 +143,19 @@ for (const file of videoFiles) {
    *
    * Obrót jest zdejmowany automatycznie z metadanych
    * (display matrix), więc nie liczymy transpose ręcznie.
-   */
-  /*
+   *
    * Przebieg 1 (opcjonalny): vidstabdetect liczy drgania kamery
    * i zapisuje transformacje do pliku .trf. Analizę robimy już na
    * przeskalowanym obrazie — jest dużo szybsza, a przebieg 2 używa
    * dokładnie tej samej skali, więc transformacje pasują.
+   *
+   * Ścieżka .trf MUSI być względna i bez dwukropka — w opisie filtra
+   * FFmpeg dwukropek oddziela opcje, więc "C:/..." rozwala parser.
    */
-  const transformsPath =
-    path.join(
-      os.tmpdir(),
-      `exbram-vidstab-${baseName.replace(
-        /[^a-z0-9]/gi,
-        "_",
-      )}.trf`,
-    );
+  const transformsPath = `vidstab-${baseName.replace(
+    /[^a-z0-9]/gi,
+    "_",
+  )}.trf`;
 
   let stabilizeFilter = null;
 
@@ -176,10 +173,7 @@ for (const file of videoFiles) {
         "-vf",
         [
           SCALE_FILTER,
-          `vidstabdetect=shakiness=6:accuracy=12:result=${transformsPath.replace(
-            /\\/g,
-            "/",
-          )}`,
+          `vidstabdetect=shakiness=6:accuracy=12:result=${transformsPath}`,
         ].join(","),
         "-an",
         "-f",
@@ -197,10 +191,9 @@ for (const file of videoFiles) {
       detect.status === 0 &&
       fs.existsSync(transformsPath)
     ) {
-      stabilizeFilter = `vidstabtransform=input=${transformsPath.replace(
-        /\\/g,
-        "/",
-      )}:smoothing=30:optzoom=1:interpol=bicubic`;
+      stabilizeFilter =
+        `vidstabtransform=input=${transformsPath}` +
+        ":smoothing=30:optzoom=1:interpol=bicubic";
     } else {
       console.warn(
         "Stabilizacja nieudana — koduję bez niej.",

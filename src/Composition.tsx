@@ -319,12 +319,64 @@ const getSafePanAmount = (
       (2 * scale)) *
     100;
 
-  /*
-   * Zapas: transformOrigin bywa poza środkiem (punkt skupienia),
-   * więc zostawiamy margines na asymetryczny zwis obrazu.
-   */
   return (
-    geometricLimit * 0.7
+    geometricLimit * 0.85
+  );
+};
+
+/*
+ * Przesunięcie, które USTAWIA punkt skupienia na środku kadru.
+ *
+ * Sam transformOrigin tego nie robi — wyznacza jedynie punkt stały
+ * skalowania, więc przy origin=40% i scale=1.6 widoczne pasmo to
+ * 15-77.5% zdjęcia, czyli środek wypada na 46%, nie na 40%.
+ * Przy mocnym zoomie kadr uciekał przez to w dół, na drogę.
+ *
+ * Dla origin=center i skali s punkt f trafia na y = 0.5 + s*(f-0.5),
+ * więc żeby wylądował na środku, przesuwamy o -s*(f-0.5).
+ * Wynik przycinamy do zwisu obrazu, żeby nie odsłonić krawędzi.
+ */
+const getFocusShift = (
+  focusPercent: number,
+  scale: number,
+) => {
+  const limit =
+    ((scale - 1) / 2) * 100;
+
+  const shift =
+    -scale *
+    (focusPercent / 100 - 0.5) *
+    100;
+
+  return clamp(
+    shift,
+    -limit,
+    limit,
+  );
+};
+
+/*
+ * Ogrodzenie to poziome pasmo — niższe niż kadr 9:16, więc kadr
+ * zawsze złapie coś nad i pod nim. Nadmiar wolimy oddać GÓRZE
+ * (dom, drzewa, niebo) niż DOŁOWI, bo pod ogrodzeniem jest zwykle
+ * kostka, podjazd albo asfalt, czyli najbrzydsza część kadru.
+ *
+ * Dlatego im niżej w zdjęciu leży produkt, tym mocniej podciągamy
+ * punkt skupienia do góry.
+ */
+const getFramingFocusY = (
+  focusY: number,
+) => {
+  const bias = clamp(
+    (focusY - 28) * 0.7,
+    0,
+    16,
+  );
+
+  return clamp(
+    focusY - bias,
+    0,
+    100,
   );
 };
 
@@ -396,16 +448,13 @@ const PhotoScene: React.FC<{
         );
 
   /*
-   * Kadrowanie obracamy wokół punktu skupienia (produkt),
-   * a nie środka zdjęcia — zarówno przy zoomie, jak i panoramie.
-   */
-  const transformOrigin = `${focusX}% ${focusY}%`;
-
-  /*
-   * Zdjęcia, na których ogrodzenie zajmuje małą część kadru
-   * (niski productProminence — dużo podjazdu, kostki, nieba,
-   * trawnika), dostają bazowe przybliżenie, żeby produkt
-   * wypełnił kadr. productProminence >= 0.65 → bez dodatku.
+   * Zdjęcia, na których metalowe ogrodzenie zajmuje małą część
+   * kadru (niski productProminence — dużo murku, podjazdu, drogi,
+   * nieba), dostają bazowe przybliżenie, żeby produkt wypełnił
+   * kadr. productProminence >= 0.6 → bez dodatku.
+   *
+   * Przy 2x widoczny wycinek to wciąż ok. 1500 px wysokości
+   * zdjęcia z telefonu, więc miękkość jest pomijalna.
    */
   const productProminence =
     clamp(
@@ -419,11 +468,11 @@ const PhotoScene: React.FC<{
     clamp(
       interpolate(
         productProminence,
-        [0.28, 0.62],
-        [1.6, 1],
+        [0.25, 0.6],
+        [2, 1],
       ),
       1,
-      1.6,
+      2,
     );
 
   /*
@@ -543,6 +592,17 @@ const PhotoScene: React.FC<{
     }
   }
 
+  /*
+   * Pion: przesuwamy kadr tak, żeby metal wylądował na środku.
+   * Poziom: objectFit "cover" zostawia nadmiar w poziomie, więc
+   * tam wystarczy objectPosition — a translateX niesie panoramę.
+   */
+  const translateY =
+    getFocusShift(
+      getFramingFocusY(focusY),
+      scale,
+    );
+
   return (
     <AbsoluteFill
       style={{
@@ -557,12 +617,14 @@ const PhotoScene: React.FC<{
           height: "100%",
           objectFit:
             "cover",
-          objectPosition: `${focusX}% ${focusY}%`,
+          objectPosition: `${focusX}% 50%`,
           transform: `
             translateX(${translateX}%)
+            translateY(${translateY}%)
             scale(${scale})
           `,
-          transformOrigin,
+          transformOrigin:
+            "center center",
         }}
       />
     </AbsoluteFill>

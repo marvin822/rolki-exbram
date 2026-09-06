@@ -2,45 +2,45 @@
   "scenes": [
     {
       "file": "26-08-13 14-07-06 5853.mov",
-      "fragmentId": "26-08-13 14-07-06 5853.mov#fragment-4",
-      "duration": 4.599999999999994,
-      "start": 50.2,
-      "reason": "Mocne otwarcie — najwyższa jakość, ruch kamery ożywia rolkę; fragment frontalny i przyciągający wzrok."
+      "fragmentId": "26-08-13 14-07-06 5853.mov#fragment-1",
+      "duration": 3.5,
+      "start": 3,
+      "reason": "Otwarcie mocnym, frontalnym fragmentem wideo — ruch ożywia rolkę, brama wypełnia kadr."
     },
     {
-      "file": "26-08-13 14-10-30 5858.jpg",
+      "file": "26-08-13 14-11-11 5861.jpg",
       "fragmentId": "",
       "duration": 3,
       "start": 0,
-      "reason": "Detal/kadr zbliżony na czarne kute ogrodzenie — zmiana perspektywy po filmie, zoomIn rekomendowany."
+      "reason": "Detal balustrady — zróżnicowanie perspektyw, spokojne tempo pozwala obejrzeć wykonanie."
     },
     {
       "file": "26-08-13 14-10-33 5859.jpg",
       "fragmentId": "",
       "duration": 3,
       "start": 0,
-      "reason": "Inna perspektywa realizacji (dekoracyjne przęsła na białym murku) — kontrastuje z poprzednim ujęciem."
+      "reason": "Dekoracyjne przęsła — detal ozdób, kontrastuje z ujęciami całości."
     },
     {
-      "file": "26-08-13 14-08-46 5854.mov",
-      "fragmentId": "26-08-13 14-08-46 5854.mov#fragment-2",
-      "duration": 3.999999999999999,
-      "start": 6.7,
-      "reason": "Ruch kamery w środku rolki ożywia montaż i pokazuje ogrodzenie w realnym kontekście."
-    },
-    {
-      "file": "26-08-13 14-11-18 5862.jpg",
+      "file": "26-08-13 14-10-30 5857.jpg",
       "fragmentId": "",
       "duration": 3,
       "start": 0,
-      "reason": "Kolejne ujęcie bramy na białym murku — inna kompozycja, pokaz detalu i otoczenia."
+      "reason": "Kute ogrodzenie z furtką — kolejny detal pokazujący jakość wykonania."
     },
     {
-      "file": "26-08-13 14-10-15 5855.jpg",
+      "file": "26-08-13 14-10-24 5856.jpg",
       "fragmentId": "",
-      "duration": 2.5,
+      "duration": 3,
       "start": 0,
-      "reason": "Mocne zamknięcie — frontalny widok bramy wypełniający kadr; krótsze, by zmieścić całość w docelowym czasie."
+      "reason": "Szersze ujęcie realizacji przy domu — kontekst i skala projektu."
+    },
+    {
+      "file": "26-08-13 14-07-06 5853.mov",
+      "fragmentId": "26-08-13 14-07-06 5853.mov#fragment-4",
+      "duration": 3.5,
+      "start": 52.5,
+      "reason": "Zamknięcie mocnym fragmentem wideo — frontalne, efektowne ujęcie realizacji."
     }
   ]
 }

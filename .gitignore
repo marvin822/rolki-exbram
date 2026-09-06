@@ -19,3 +19,6 @@ public/processed
 # Wejściowe zdjęcia i filmy — materiał per realizacja, trzymany
 # lokalnie, nie synchronizowany przez Git
 public/media/
+
+# Pliki transformacji vidstab (kasowane po normalizacji)
+*.trf
