@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Audio,
   Composition,
   staticFile,
   useCurrentFrame,
@@ -75,6 +76,24 @@ const FPS = 30;
 const TRANSITION_DURATION = 15;
 
 const END_CARD_DURATION = 3;
+
+/*
+ * Muzyka w tle.
+ *
+ * Na razie stały utwór grający przez całą rolkę
+ * z krótkim fade in / fade out. Docelowo wybór
+ * może przejąć logika projektu lub AI (Priorytet 4/8).
+ *
+ * Filmy są wyciszone (normalize-videos.mjs dodaje -an,
+ * a VideoScene ustawia muted), więc dźwięk źródłowy
+ * nie konkuruje z muzyką.
+ */
+const MUSIC_TRACK =
+  "fresh-start.mp3";
+
+const MUSIC_VOLUME = 0.25;
+
+const MUSIC_FADE_FRAMES = 18;
 
 const PHOTO_SCALE = 1.15;
 const BASE_ZOOM = 0.08;
@@ -535,6 +554,7 @@ const VideoScene: React.FC<{
     >
       <OffthreadVideo
         src={staticFile(src)}
+        muted
         startFrom={
           Math.round(
             start * FPS,
@@ -825,6 +845,45 @@ const EndCard: React.FC<{
   );
 };
 
+const MusicTrack: React.FC =
+  () => {
+    const totalFrames =
+      getTotalDurationInFrames();
+
+    return (
+      <Audio
+        src={staticFile(
+          `music/${MUSIC_TRACK}`,
+        )}
+        loop
+        volume={(f) =>
+          interpolate(
+            f,
+            [
+              0,
+              MUSIC_FADE_FRAMES,
+              totalFrames -
+                MUSIC_FADE_FRAMES,
+              totalFrames,
+            ],
+            [
+              0,
+              MUSIC_VOLUME,
+              MUSIC_VOLUME,
+              0,
+            ],
+            {
+              extrapolateLeft:
+                "clamp",
+              extrapolateRight:
+                "clamp",
+            },
+          )
+        }
+      />
+    );
+  };
+
 export const MyComponent: React.FC<Props> =
   () => {
     const frame =
@@ -859,6 +918,8 @@ export const MyComponent: React.FC<Props> =
               "#f2f0eb",
           }}
         >
+          <MusicTrack />
+
           <EndCard
             frame={
               endCardFrame
@@ -875,6 +936,8 @@ export const MyComponent: React.FC<Props> =
             "black",
         }}
       >
+        <MusicTrack />
+
         <TransitionSeries>
           {scenes.map(
             (

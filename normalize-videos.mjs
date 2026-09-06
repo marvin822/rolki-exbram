@@ -163,11 +163,9 @@ for (const file of videoFiles) {
     "-r",
     "30",
 
-    "-c:a",
-    "aac",
-
-    "-b:a",
-    "128k",
+    // Filmy w rolce grają bez własnego dźwięku —
+    // ścieżkę dźwiękową daje muzyka w Remotion.
+    "-an",
 
     outputPath,
   ];
