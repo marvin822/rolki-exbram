@@ -149,6 +149,25 @@ const BACKDROP_SCALE = 1.3;
 const BACKDROP_BLUR = 45;
 const BACKDROP_BRIGHTNESS = 0.62;
 
+/*
+ * Znak wodny — logo w prawym dolnym rogu PASA Z TREŚCIĄ,
+ * nie całego kadru 1080x1920.
+ *
+ * W rogu canvasu wylądowałoby na rozmytym tle, gdzie wygląda jak
+ * doklejone, a na Instagramie dolny pas kadru zasłania interfejs.
+ *
+ * Bez cienia i mocno przezroczyste — ma być delikatną sygnaturą,
+ * a nie elementem konkurującym z ogrodzeniem.
+ */
+const WATERMARK_FILE =
+  "others/exbra_logo_biale_400.png";
+
+const WATERMARK_WIDTH = 230;
+
+const WATERMARK_MARGIN = 40;
+
+const WATERMARK_OPACITY = 0.6;
+
 const analysisData =
   analysis as PhotoAnalysis[];
 
@@ -364,6 +383,38 @@ export const MyComposition =
  * Powiększenie jest konieczne, bo blur przy krawędziach próbkuje
  * przezroczystość i bez zapasu widać ciemną obwódkę.
  */
+const Watermark: React.FC =
+  () => {
+    return (
+      <div
+        style={{
+          position:
+            "absolute",
+          right:
+            WATERMARK_MARGIN,
+          bottom:
+            WATERMARK_MARGIN,
+          width:
+            WATERMARK_WIDTH,
+          opacity:
+            WATERMARK_OPACITY,
+        }}
+      >
+        <Img
+          src={staticFile(
+            WATERMARK_FILE,
+          )}
+          style={{
+            width: "100%",
+            height: "auto",
+            display:
+              "block",
+          }}
+        />
+      </div>
+    );
+  };
+
 const FramedMedia: React.FC<{
   aspect?: ContentAspect;
   backdrop: React.ReactNode;
@@ -414,6 +465,8 @@ const FramedMedia: React.FC<{
           }}
         >
           {children}
+
+          <Watermark />
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
