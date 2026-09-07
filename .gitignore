@@ -13,7 +13,7 @@ output
 video-frames
 video-frames-detail
 
-# FFmpeg-normalized clips, rebuilt from public/media/videos
+# FFmpeg-normalized clips, rebuilt per set from public/media/<zestaw>
 public/processed
 
 # Wejściowe zdjęcia i filmy — materiał per realizacja, trzymany
@@ -22,3 +22,6 @@ public/media/
 
 # Pliki transformacji vidstab (kasowane po normalizacji)
 *.trf
+
+# Cache analizy per zestaw — odtwarzalny, ale kosztowny; lokalnie
+work/

@@ -21,24 +21,42 @@ node make-reel.mjs
 
 | Flaga / zmienna | Działanie |
 |---|---|
+| `"nazwa zestawu"` | przerabia ten jeden zestaw, nawet jeśli ma już rolkę |
+| `--wszystko` (`--all`) | przerabia wszystkie zestawy, także te z gotową rolką |
 | `--skip-opis` (`--bez-opisu`) | pomija generowanie opisu |
 | `REEL_STABILIZE=0` | wyłącza stabilizację obrazu (oszczędza jeden przebieg dekodowania) |
+| `REEL_SET` | nazwa zestawu; ustawia ją `make-reel.mjs`, ręcznie tylko przy uruchamianiu pojedynczego kroku |
 | `OPENAI_API_KEY` | wymagany; zmienna środowiskowa albo plik `.env` obok `make-reel.bat` |
 
+Bez argumentów przerabiane są **tylko zestawy bez folderu w `output/`**. Powtórka
+nie jest darmowa — cache ma wyłącznie analiza zdjęć, a analiza filmów, opis,
+stabilizacja i render lecą od nowa.
+
 ## 2. Materiały wejściowe
+
+**Zestaw = podfolder `public/media/` = jedna realizacja = jedna rolka.**
+Zdjęcia i filmy leżą w nim razem; rozdziela je wyłącznie rozszerzenie pliku.
 
 ```
 public/
 ├── media/
-│   ├── photos/      ← zdjęcia (analizowane)
-│   └── videos/      ← filmy (analizowane)
-├── music/           ← podkłady .mp3 (losowane)
-├── others/          ← logo do planszy końcowej
-└── processed/       ← znormalizowane filmy (generowane)
+│   ├── kowalski-brama/   ← zdjęcia + filmy jednej realizacji
+│   │   ├── IMG_5394.mov
+│   │   └── IMG_5395.jpg
+│   └── nowak-2026-09/
+├── music/                ← podkłady .mp3 (losowane)
+├── others/               ← logo planszy końcowej i znak wodny
+└── processed/            ← znormalizowane filmy (generowane)
 ```
 
-AI analizuje **wyłącznie** `media/photos` i `media/videos`. Logo i muzyka leżą
-osobno, żeby nie trafiły do montażu jako zwykła scena.
+Nazwy zestawów mogą zawierać spacje i polskie znaki — nazwa jedzie do kroków
+zmienną `REEL_SET`, nie argumentem, więc powłoka jej nie rozbije.
+
+Luźne pliki wrzucone prosto do `public/media/` nie należą do żadnego zestawu.
+Pipeline wypisuje je jako pominięte, zamiast po cichu ignorować.
+
+AI analizuje **wyłącznie** zawartość folderu zestawu. Logo i muzyka leżą osobno,
+żeby nie trafiły do montażu jako zwykła scena.
 
 `public/media/` jest w `.gitignore` — materiał per realizacja trzymamy lokalnie.
 
@@ -46,12 +64,33 @@ osobno, żeby nie trafiły do montażu jako zwykła scena.
 
 ```
 output/
-├── reel-RRRR-MM-DD_GG-MM-SS.mp4
-└── opis-RRRR-MM-DD_GG-MM-SS.txt
+└── kowalski-brama/
+    ├── reel-RRRR-MM-DD_GG-MM-SS.mp4
+    └── opis-RRRR-MM-DD_GG-MM-SS.txt
 ```
 
-Każdy przebieg dokłada nową parę plików ze wspólnym znacznikiem czasu —
-nic nie jest nadpisywane.
+Folder wyjściowy nazywa się tak samo jak źródłowy. Każdy przebieg dokłada nową
+parę plików ze wspólnym znacznikiem czasu — nic nie jest nadpisywane.
+
+## 3a. Stan między zestawami
+
+Kroki pipeline'u gadają przez `analysis.json`, `video-analysis.json` i
+`edit.json` w korzeniu projektu, bo Remotion importuje je statycznie i musi je
+tam zastać w chwili renderu.
+
+Przy wielu zestawach te pliki są jednocześnie cache'em, więc `make-reel.mjs`
+przed każdym zestawem wczytuje jego stan z `work/<zestaw>/`, a po analizie
+zapisuje go z powrotem. Bez tego przetworzenie zestawu B kasowałoby analizę
+zestawu A — [analyze-image.mjs](analyze-image.mjs) przebudowuje `analysis.json`
+wyłącznie z plików obecnych w bieżącym folderze.
+
+Zestaw bez zapisanego stanu dostaje wyzerowane pliki, żeby nie odziedziczyć
+danych poprzednika. `work/` jest w `.gitignore`.
+
+Zestawy lecą **po kolei, nigdy równolegle** — dzielą te pliki oraz katalogi
+`video-frames/` i `public/processed/`, które są czyszczone przed każdym zestawem.
+Błąd jednego zestawu nie przerywa reszty; podsumowanie na końcu mówi, co się
+udało, a kod wyjścia jest niezerowy, gdy cokolwiek padło.
 
 ---
 
@@ -70,6 +109,9 @@ nic nie jest nadpisywane.
 
 Zestaw bez filmów przechodzi tą samą ścieżką — kroki 1–3 i 5 same się pomijają.
 Nie ma osobnego pipeline'u dla zdjęć.
+
+Wspólne rozpoznawanie zestawu i klasyfikacja plików po rozszerzeniu siedzą
+w [reel-set.mjs](reel-set.mjs).
 
 ---
 
@@ -126,7 +168,8 @@ droga i niebo liczą się jako `deadSpace`, nawet gdy ładnie wyglądają.
 
 ## 7. Reguły planera
 
-- **Jedna realizacja na rolkę.** Gdy `takenAt` i opisy pokazują kilka posesji,
+- **Jedna realizacja na rolkę.** Folder zestawu deklaruje ją wprost, ale reguła
+  została jako zabezpieczenie: gdy `takenAt` i opisy pokazują kilka posesji,
   planer wybiera jedną i wypisuje pominięte pliki.
 - Długość: 17–20 s materiału, cała rolka 20–23 s, nigdy powyżej 25 s.
 - 6–8 scen; zdjęcia 3–4 s (mocne do 4,5 s), fragmenty wideo 4–5 s.
@@ -203,6 +246,9 @@ Rzeczy, które łatwo zepsuć ponownie:
   Remotion, który liczy się na CPU.
 - Kilka wariantów jednej rolki i wybór najlepszego.
 - Automatyczna publikacja / integracja z n8n.
+- **Cache ma tylko analiza zdjęć.** `analyze-video.mjs` i `analyze-video-detail.mjs`
+  analizują filmy od zera przy każdym przebiegu, opis też powstaje na nowo.
+  Dlatego dwuklik domyślnie pomija zestawy z gotową rolką.
 
 ---
 

@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import OpenAI from "openai";
+import { getOutputDir } from "./reel-set.mjs";
 
 const CWD = process.cwd();
 
@@ -19,10 +20,12 @@ const VIDEO_ANALYSIS_FILE = path.join(
   "video-analysis.json",
 );
 
-const OUTPUT_DIR = path.join(
-  CWD,
-  "output",
-);
+/*
+ * Opis ląduje w output/<zestaw>/, obok gotowej rolki
+ * i z tym samym znacznikiem czasu w nazwie.
+ */
+const OUTPUT_DIR =
+  getOutputDir();
 
 const pad = (value) =>
   String(value).padStart(

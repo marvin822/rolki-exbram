@@ -1,32 +1,23 @@
 import fs from "fs";
 import path from "path";
 import { execFileSync } from "child_process";
+import {
+  VIDEO_EXTENSIONS,
+  getSetDir,
+  getSetName,
+  listSetFiles,
+} from "./reel-set.mjs";
 
-const publicDir = "./public";
-const videosDir = path.join(
-  publicDir,
-  "media",
-  "videos",
+const setName = getSetName();
+const videosDir = getSetDir(
+  setName,
 );
 
 const outputDir = "./video-frames";
 
-const supportedVideoExtensions = [
-  ".mp4",
-  ".mov",
-  ".webm",
-];
-
-if (!fs.existsSync(publicDir)) {
-  console.error(
-    `Nie znaleziono katalogu: ${publicDir}`,
-  );
-  process.exit(1);
-}
-
 if (!fs.existsSync(videosDir)) {
   console.error(
-    `Nie znaleziono katalogu z filmami: ${videosDir}`,
+    `Nie znaleziono zestawu: ${videosDir}`,
   );
   process.exit(1);
 }
@@ -34,8 +25,8 @@ if (!fs.existsSync(videosDir)) {
 /*
  * Czyścimy stare klatki.
  *
- * Dzięki temu analiza zawsze dotyczy wyłącznie
- * filmów znajdujących się aktualnie w public/media/videos.
+ * Zestawy lecą po kolei i dzielą ten katalog, więc bez
+ * czyszczenia analiza zobaczyłaby filmy poprzedniego zestawu.
  */
 fs.rmSync(outputDir, {
   recursive: true,
@@ -46,22 +37,14 @@ fs.mkdirSync(outputDir, {
   recursive: true,
 });
 
-const videoFiles = fs
-  .readdirSync(videosDir)
-  .filter((file) => {
-    const extension = path
-      .extname(file)
-      .toLowerCase();
-
-    return supportedVideoExtensions.includes(
-      extension,
-    );
-  })
-  .sort();
+const videoFiles = listSetFiles(
+  VIDEO_EXTENSIONS,
+  setName,
+);
 
 if (videoFiles.length === 0) {
   console.log(
-    "Nie znaleziono żadnych filmów w public/media/videos.",
+    `Zestaw "${setName}" nie zawiera filmów — same zdjęcia.`,
   );
   process.exit(0);
 }

@@ -58,6 +58,7 @@ type EditScene = {
 };
 
 type EditPlan = {
+  set?: string;
   scenes: EditScene[];
 };
 
@@ -176,6 +177,14 @@ const videoAnalysisData =
 
 const editData =
   editPlan as EditPlan;
+
+/*
+ * Nazwa zestawu (podfolder public/media/) przychodzi w planie
+ * montażu — importy JSON są statyczne, więc kompozycja nie ma
+ * jak przeczytać zmiennej środowiskowej z pipeline'u.
+ */
+const SET_NAME =
+  editData.set ?? "";
 
 const durationInFrames = (
   seconds: number,
@@ -297,7 +306,7 @@ const scenes: Scene[] =
 
       return {
         type: "photo",
-        src: `media/photos/${scene.file}`,
+        src: `media/${SET_NAME}/${scene.file}`,
         duration:
           scene.duration,
       };

@@ -12,8 +12,13 @@ echo ========================================
 echo  Katalog projektu: %cd%
 echo.
 echo  Wrzuc materialy przed uruchomieniem:
-echo    - zdjecia: public\media\photos
-echo    - filmy:   public\media\videos
+echo    public\media\^<nazwa zestawu^>\  - zdjecia i filmy razem
+echo.
+echo  Jeden folder = jedna realizacja = jedna rolka.
+echo  Wynik trafia do output\^<nazwa zestawu^>\
+echo.
+echo  Bez argumentow: tylko zestawy bez gotowej rolki.
+echo  --wszystko: przerabia rowniez te, ktore juz maja rolke.
 echo.
 
 rem Wczytanie zmiennych z pliku .env (jesli istnieje), np. OPENAI_API_KEY
@@ -71,11 +76,10 @@ set "EXITCODE=%errorlevel%"
 echo.
 echo ========================================
 if "%EXITCODE%"=="0" (
-  echo  GOTOWE - pliki w folderze output\
-  echo  ^(reel-RRRR-MM-DD_GG-MM-SS.mp4 oraz opis-...txt^)
+  echo  GOTOWE - pliki w folderach output\^<nazwa zestawu^>\
 ) else (
-  echo  BLAD - pipeline zakonczyl sie kodem %EXITCODE%
-  echo  Przewin terminal wyzej, zeby zobaczyc szczegoly.
+  echo  BLAD - co najmniej jeden zestaw sie nie udal ^(kod %EXITCODE%^)
+  echo  Szczegoly w PODSUMOWANIU wyzej.
 )
 echo ========================================
 echo.

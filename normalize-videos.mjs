@@ -1,16 +1,21 @@
 import fs from "fs";
 import path from "path";
 import { spawnSync } from "child_process";
+import {
+  VIDEO_EXTENSIONS,
+  getSetDir,
+  getSetName,
+} from "./reel-set.mjs";
 
 const publicDir = "./public";
-const videosDir = "./public/media/videos";
+const setName = getSetName();
+const videosDir = getSetDir(
+  setName,
+);
 const processedDir = "./public/processed";
 
-const supportedVideoExtensions = [
-  ".mp4",
-  ".mov",
-  ".webm",
-];
+const supportedVideoExtensions =
+  VIDEO_EXTENSIONS;
 
 const FFMPEG_TIMEOUT_MS = 20 * 60 * 1000;
 
@@ -37,7 +42,7 @@ if (!fs.existsSync(publicDir)) {
 
 if (!fs.existsSync(videosDir)) {
   console.error(
-    `Nie znaleziono katalogu filmów: ${videosDir}`,
+    `Nie znaleziono zestawu: ${videosDir}`,
   );
 
   process.exit(1);
@@ -46,8 +51,8 @@ if (!fs.existsSync(videosDir)) {
 /*
  * Czyścimy stary katalog processed.
  *
- * Dzięki temu w public/processed znajdują się wyłącznie
- * filmy odpowiadające aktualnej zawartości public/media/videos.
+ * Zestawy lecą po kolei i dzielą ten katalog, więc bez
+ * czyszczenia zostałyby w nim filmy poprzedniego zestawu.
  */
 fs.rmSync(processedDir, {
   recursive: true,

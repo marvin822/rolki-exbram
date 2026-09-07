@@ -1,22 +1,19 @@
 import fs from "fs";
 import path from "path";
 import OpenAI from "openai";
+import {
+  getSetDir,
+  getSetName,
+} from "./reel-set.mjs";
 
-const PUBLIC_DIR = path.join(
-  process.cwd(),
-  "public",
-);
+/*
+ * Zdjęcia i filmy leżą RAZEM w folderze zestawu.
+ * Rozdziela je wyłącznie rozszerzenie pliku.
+ */
+const SET_NAME = getSetName();
 
-const PHOTOS_DIR = path.join(
-  PUBLIC_DIR,
-  "media",
-  "photos",
-);
-
-const VIDEOS_DIR = path.join(
-  PUBLIC_DIR,
-  "media",
-  "videos",
+const SET_DIR = getSetDir(
+  SET_NAME,
 );
 
 const ANALYSIS_FILE = path.join(
@@ -310,14 +307,14 @@ const getFilesFromDirectory = (
 
 const getPhotoFiles = () => {
   return getFilesFromDirectory(
-    PHOTOS_DIR,
+    SET_DIR,
     IMAGE_EXTENSIONS,
   );
 };
 
 const getVideoFiles = () => {
   return getFilesFromDirectory(
-    VIDEOS_DIR,
+    SET_DIR,
     VIDEO_EXTENSIONS,
   );
 };
@@ -330,7 +327,7 @@ const analyzeImage = async (
 
   const filePath =
     path.join(
-      PHOTOS_DIR,
+      SET_DIR,
       file,
     );
 
@@ -1182,22 +1179,10 @@ const main = async () => {
   }
 
   if (
-    !fs.existsSync(
-      PHOTOS_DIR,
-    )
+    !fs.existsSync(SET_DIR)
   ) {
     throw new Error(
-      `Nie znaleziono katalogu zdjęć: ${PHOTOS_DIR}`,
-    );
-  }
-
-  if (
-    !fs.existsSync(
-      VIDEOS_DIR,
-    )
-  ) {
-    throw new Error(
-      `Nie znaleziono katalogu filmów: ${VIDEOS_DIR}`,
+      `Nie znaleziono zestawu: ${SET_DIR}`,
     );
   }
 
@@ -1222,14 +1207,14 @@ const main = async () => {
   imageFiles.forEach(
     (file) =>
       console.log(
-        `- media/photos/${file}`,
+        `- ${file}`,
       ),
   );
 
   videoFiles.forEach(
     (file) =>
       console.log(
-        `- media/videos/${file}`,
+        `- ${file}`,
       ),
   );
 
@@ -1346,9 +1331,17 @@ const main = async () => {
         validVideoAnalysis,
     });
 
+  /*
+   * Nazwa zestawu jedzie w planie montażu, bo Remotion importuje
+   * edit.json statycznie i nie widzi zmiennych środowiskowych —
+   * a musi wiedzieć, z którego folderu brać zdjęcia.
+   */
   writeJson(
     EDIT_FILE,
-    editPlan,
+    {
+      set: SET_NAME,
+      ...editPlan,
+    },
   );
 
   console.log(

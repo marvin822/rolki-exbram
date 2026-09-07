@@ -2,13 +2,9 @@ import fs from "fs";
 import path from "path";
 import { execFileSync } from "child_process";
 import OpenAI from "openai";
+import { getSetDir } from "./reel-set.mjs";
 
-const publicDir = "./public";
-const videosDir = path.join(
-  publicDir,
-  "media",
-  "videos",
-);
+const videosDir = getSetDir();
 const framesDir = "./video-frames";
 const detailFramesDir = "./video-frames-detail";
 const analysisFile = "./video-analysis.json";
