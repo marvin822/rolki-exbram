@@ -58,7 +58,9 @@ Pipeline wypisuje je jako pominięte, zamiast po cichu ignorować.
 AI analizuje **wyłącznie** zawartość folderu zestawu. Logo i muzyka leżą osobno,
 żeby nie trafiły do montażu jako zwykła scena.
 
-`public/media/` jest w `.gitignore` — materiał per realizacja trzymamy lokalnie.
+`public/media/` i `public/music/` są w `.gitignore` — materiał realizacji
+i licencjonowane podkłady trzymamy lokalnie, poza repozytorium. Pusty (albo
+nieistniejący) folder z muzyką oznacza rolkę bez podkładu, nie błąd.
 
 ## 3. Wynik
 

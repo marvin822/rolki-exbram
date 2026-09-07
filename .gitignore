@@ -20,6 +20,10 @@ public/processed
 # lokalnie, nie synchronizowany przez Git
 public/media/
 
+# Podkłady muzyczne — licencjonowane pliki audio, ciężkie i wymieniane
+# niezależnie od kodu. Brak folderu = rolka bez podkładu.
+public/music/
+
 # Pliki transformacji vidstab (kasowane po normalizacji)
 *.trf
 
