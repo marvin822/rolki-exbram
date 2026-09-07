@@ -3,44 +3,44 @@
     {
       "file": "26-06-03 14-07-28 5396.jpg",
       "fragmentId": "",
-      "duration": 3,
+      "duration": 3.5,
       "start": 0,
-      "reason": "Otwarcie — najwyższa widoczność produktu w zestawie, frontalne ujęcie podkreślające lamele."
+      "reason": "Mocne frontalne ujęcie (najwyższe productProminence) — idealne otwarcie, delikatny zoom."
     },
     {
       "file": "26-06-03 14-06-23 5394.mov",
       "fragmentId": "26-06-03 14-06-23 5394.mov#fragment-1",
-      "duration": 3.5999999999999996,
-      "start": 5.9,
-      "reason": "Krótki fragment wideo — subtelny ruch kamery ożywia rolkę i pokazuje materiał w ruchu."
+      "duration": 3.5,
+      "start": 2.5,
+      "reason": "Ruch kamery ożywia rolkę; użyć fragmentu z qualityScore 0.9 jako drugi plan."
     },
     {
       "file": "26-06-03 14-07-25 5395.jpg",
       "fragmentId": "",
       "duration": 3,
       "start": 0,
-      "reason": "Szersze ujęcie kontekstowe — pokazuje przęsło na tle domu, różnorodność kadru."
+      "reason": "Szersze kontekstowe ujęcie panelu przy domu — pokazuje całość realizacji."
+    },
+    {
+      "file": "26-06-03 14-06-23 5394.mov",
+      "fragmentId": "26-06-03 14-06-23 5394.mov#fragment-3",
+      "duration": 4.300000000000001,
+      "start": 15.5,
+      "reason": "Drugi fragment wideo (dynamiczny), dobry do pokazania detalu i ruchu bramy."
     },
     {
       "file": "26-06-03 14-07-58 5398.jpg",
       "fragmentId": "",
       "duration": 3,
       "start": 0,
-      "reason": "Ujęcie bramy/wjazdu — inna perspektywa, przeplata zdjęcia dla rytmu."
-    },
-    {
-      "file": "26-06-03 14-06-23 5394.mov",
-      "fragmentId": "26-06-03 14-06-23 5394.mov#fragment-4",
-      "duration": 4,
-      "start": 40,
-      "reason": "Drugi fragment wideo — dodatkowa dynamika; umieszczony oddzielnie od pierwszego filmu."
+      "reason": "Detal poziomych lameli — krótsze ujęcie jako przerywnik przed finałem."
     },
     {
       "file": "26-06-03 14-07-54 5397.jpg",
       "fragmentId": "",
-      "duration": 3,
+      "duration": 2.7,
       "start": 0,
-      "reason": "Zakończenie — mocne, szczegółowe ujęcie paneli; zamyka realizację silnym akcentem."
+      "reason": "Silne zamknięcie — brama/przęsło frontalnie wypełnia kadr, końcowy akcent realizacji."
     }
   ]
 }
