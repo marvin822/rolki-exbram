@@ -25,7 +25,11 @@ const ROOT = path.resolve(PANEL_DIR, "..");
 
 const HOST = "127.0.0.1";
 
-const PORT = Number(process.env.PANEL_PORT) || 4321;
+const PORT =
+  Number(
+    process.argv.find((arg) => arg.startsWith("--port="))?.slice(7) ??
+      process.env.PANEL_PORT,
+  ) || 4321;
 
 const MEDIA_ROOT = path.join(ROOT, "public", "media");
 
@@ -377,8 +381,72 @@ const readPlanForEditor = (setName) => {
     },
     missing: plan.copy?.missing ?? [],
     type: plan.copy?.type ?? "",
-    angle: plan.copy?.angle ?? "",
+    angle:
+      plan.copy?.variants?.[plan.copy?.chosen]?.angle ??
+      plan.copy?.angle ??
+      "",
+    story: plan.story ?? "",
+    chosen: Number.isInteger(plan.copy?.chosen) ? plan.copy.chosen : null,
+    editedByHand: Boolean(plan.copy?.editedByHand),
+    variants: (plan.copy?.variants ?? []).map((variant) => ({
+      angle: variant.angle ?? "",
+      hook: variant.hook ?? "",
+      hookHighlight: variant.hookHighlight ?? "",
+      cover: variant.cover ?? "",
+      boards: (variant.spans ?? []).map((span) => ({
+        from: span.from,
+        to: span.to,
+        text: span.text,
+        highlight: span.highlight ?? "",
+      })),
+      firstLine: variant.description?.firstLine ?? "",
+      problems: variant.problems ?? [],
+    })),
   };
+};
+
+/*
+ * Przełączenie rolki na inną wersję napisów od copywritera —
+ * ta sama logika co applyVariant w write-copy.mjs: hook, plansza
+ * na każdej scenie z jej odcinka, okładka, opis.
+ */
+const chooseVariant = (setName, index) => {
+  const file = getPlanFile(setName);
+
+  const plan = readJson(file, null);
+
+  const variant = plan?.copy?.variants?.[index];
+
+  if (!variant) {
+    throw new Error("Nie ma takiej wersji napisów.");
+  }
+
+  plan.hook = variant.hook;
+  plan.hookHighlight = variant.hookHighlight;
+  plan.cover = variant.cover;
+
+  plan.scenes = plan.scenes.map((scene, sceneIndex) => {
+    const span = (variant.spans ?? []).find(
+      (item) => sceneIndex + 1 >= item.from && sceneIndex + 1 <= item.to,
+    );
+
+    return {
+      ...scene,
+      caption: span?.text ?? "",
+      captionHighlight: span?.highlight ?? "",
+    };
+  });
+
+  plan.copy = {
+    ...plan.copy,
+    chosen: index,
+    description: variant.description,
+    missing: variant.missing ?? [],
+    problems: variant.problems ?? [],
+    editedByHand: false,
+  };
+
+  fs.writeFileSync(file, `${JSON.stringify(plan, null, 2)}\n`, "utf8");
 };
 
 /*
@@ -807,6 +875,27 @@ const handleApi = async (request, response, parts) => {
     });
 
     sendJson(response, 202, publicJob());
+
+    return;
+  }
+
+  // PUT /api/sets/:set/variant — wybór wersji napisów od copywritera
+  if (parts[2] === "variant" && method === "PUT") {
+    if (isJobRunningFor(setName)) {
+      sendError(
+        response,
+        409,
+        "Dla tego zestawu trwa generowanie — poczekaj, aż się skończy.",
+      );
+
+      return;
+    }
+
+    const { index } = await readJsonBody(request);
+
+    chooseVariant(setName, Number(index));
+
+    sendJson(response, 200, readPlanForEditor(setName));
 
     return;
   }

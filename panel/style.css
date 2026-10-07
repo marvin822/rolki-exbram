@@ -757,6 +757,99 @@ textarea:focus {
   font-size: 17px;
 }
 
+/* --- Wersje napisów ---------------------------------------------- */
+
+.variants {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.variant {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.variant.chosen {
+  border-color: var(--red);
+}
+
+.variant-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.variant-angle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+.variant-badge {
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--red-soft);
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.variant-hook {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.variant-boards {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.variant-scenes {
+  display: inline-block;
+  min-width: 52px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.variant-cover {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.variant-problems {
+  margin: 0;
+  color: var(--warn);
+  font-size: 13px;
+  cursor: help;
+}
+
+.variant-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+
 /* --- Brief ------------------------------------------------------- */
 
 .brief-view textarea {

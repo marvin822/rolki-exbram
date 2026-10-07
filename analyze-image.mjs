@@ -5,6 +5,7 @@ import {
   getSetDir,
   getSetName,
 } from "./reel-set.mjs";
+import { makePreview } from "./media-preview.mjs";
 
 /*
  * Zdjęcia i filmy leżą RAZEM w folderze zestawu.
@@ -709,6 +710,81 @@ Odpowiedz wyłącznie JSON-em zgodnym ze schematem.
 
 const MAX_FRAGMENTS_PER_VIDEO = 2;
 
+/*
+ * Planer układa rolkę jako historię (brief, sekcja 14) i do tego
+ * musi WIDZIEĆ materiał — same opisy z analizy kadru mówiły, gdzie
+ * jest metal, ale nie, jak ogrodzenie wygląda przy domu. Mocniejszy
+ * model, bo od wyboru ujęć zależy też, co da się napisać na ekranie.
+ */
+const PLANNER_MODEL = "gpt-5";
+
+/*
+ * Role scen w historii rolki — copywriter pisze pod nie napisy.
+ */
+const SCENE_ROLES = [
+  "hook",
+  "dom",
+  "korzysc",
+  "detal",
+  "final",
+];
+
+/*
+ * Podglądy materiału dla planera: każde zdjęcie i środek każdego
+ * fragmentu filmu, jako mały obraz z etykietą. Bez podglądu (błąd
+ * FFmpeg) materiał zostaje na liście, tylko model zna go z opisu.
+ */
+const buildMaterialPreviews = (
+  usableMedia,
+) => {
+  const content = [];
+
+  usableMedia.forEach(
+    (item, index) => {
+      const preview =
+        makePreview(
+          path.join(
+            SET_DIR,
+            item.file,
+          ),
+          item.type ===
+            "video"
+            ? {
+                seekSeconds:
+                  Number(
+                    item.refinedStart ??
+                      0,
+                  ) +
+                  Number(
+                    item.refinedDuration ??
+                      0,
+                  ) /
+                    2,
+              }
+            : {},
+        );
+
+      if (!preview) {
+        return;
+      }
+
+      content.push(
+        {
+          type: "input_text",
+          text: `MATERIAŁ ${index + 1}: ${item.type === "video" ? `film ${item.fragmentId}` : `zdjęcie ${item.file}`}`,
+        },
+        {
+          type: "input_image",
+          image_url: preview,
+          detail: "low",
+        },
+      );
+    },
+  );
+
+  return content;
+};
+
 const generateEditPlan = async ({
   images,
   videos,
@@ -911,9 +987,18 @@ const generateEditPlan = async ({
     "\nTworzę plan montażu...",
   );
 
+  console.log(
+    "Przygotowuję podglądy materiału dla planera...",
+  );
+
+  const previews =
+    buildMaterialPreviews(
+      usableMedia,
+    );
+
   const response =
     await client.responses.create({
-      model: "gpt-5-mini",
+      model: PLANNER_MODEL,
 
       input: [
         {
@@ -924,9 +1009,15 @@ const generateEditPlan = async ({
               type: "input_text",
 
               text: `
-Jesteś doświadczonym montażystą krótkich reklamowych Reels dla firmy EXBRAM produkującej ogrodzenia.
+Jesteś doświadczonym montażystą krótkich reklamowych Reels dla firmy EXBRAM —
+producenta stalowych ogrodzeń, bram i balustrad.
 
-Na podstawie dostępnych materiałów przygotuj atrakcyjną, dynamiczną rolkę prezentującą realizację.
+Rolkę ogląda ktoś, kto buduje albo urządza dom i dobiera ogrodzenie do SWOJEJ
+posesji. Ma pomyśleć: „takiego efektu chcę przy swoim domu”. Dlatego rolka
+pokazuje nie tylko metal, ale też to, jak ogrodzenie wygląda przy domu.
+
+Poniżej są OBRAZY wszystkich materiałów (MATERIAŁ 1, 2, …) — obejrzyj je,
+a lista MATERIAŁY podaje dane techniczne (pliki, fragmenty filmów, analiza).
 
 MATERIAŁY:
 ${JSON.stringify(
@@ -935,21 +1026,48 @@ ${JSON.stringify(
   2,
 )}
 
+NAJPIERW HISTORIA, POTEM UJĘCIA:
+
+1. Obejrzyj cały materiał i ustal, co jest atutem tej realizacji z punktu
+   widzenia klienta: jak ogrodzenie wygląda przy domu (styl domu, elewacja),
+   czy zasłania posesję czy jest lekkie i otwarte, co je wyróżnia (wzór,
+   detal, brama, furtka w tym samym stylu). Zapisz to krótko w polu story.
+
+2. Ułóż rolkę jak krótką historię (każda scena dostaje role):
+   - hook — najmocniejsze, najbardziej inspirujące ujęcie na start: ładny
+     front, ogrodzenie z domem, ciekawa perspektywa; ma zatrzymać kciuk,
+   - dom — ogrodzenie RAZEM z domem albo frontem posesji (dopasowanie
+     do architektury). Jeśli jest choć jedno takie ujęcie, MUSI być w rolce —
+     klient dobiera ogrodzenie do domu,
+   - korzysc — ujęcie pokazujące, co ogrodzenie daje: zasłania widok,
+     porządkuje wjazd, brama i furtka tworzą jedną całość,
+   - detal — zbliżenie wykonania (lamele, wzór, łączenia) — konkret EXBRAM,
+   - final — mocne ujęcie całości tuż przed planszą z wyceną (nie detal).
+   Przy małej ilości materiału role mogą się łączyć (np. hook + dom
+   w jednym ujęciu). Kolejność możesz zmienić, jeśli materiał opowiada
+   lepszą historię.
+
+3. Do każdej sceny dopisz shows — jedno zdanie PO POLSKU, co widać
+   z punktu widzenia klienta: dom (styl, elewacja, dach), front posesji,
+   jak gęste są lamele / ile zasłaniają, brama, furtka, detal. Np.:
+   "Front z bramą przesuwną przed jasnym, nowoczesnym domem z płaskim
+   dachem; poziome lamele w grafitowym kolorze, gęste — mocno zasłaniają
+   podwórko". Copywriter pisze napisy na podstawie tych zdań — pisz tylko
+   to, co naprawdę widać.
+
+4. contextFile — nazwa pliku ZDJĘCIA, które najlepiej pokazuje całą
+   realizację razem z domem (może być spoza wybranych scen); "" gdy brak.
+
 CEL DŁUGOŚCI:
 
-- cała rolka trwa 10-25 sekund — długość DOBIERZ DO ILOŚCI MOCNEGO
-  MATERIAŁU; plansza końcowa to 3,5 s, więc materiał przed nią
-  to 6,5-21,5 s,
-- mało mocnych ujęć (2-3) → krótka rolka, ok. 7-11 s materiału
-  w 3 scenach; krótka rolka częściej jest oglądana do końca
-  i zapętlana, więc to nie jest gorsza wersja,
-- średnio (4-5 mocnych ujęć) → ok. 12-16 s materiału w 4-5 scenach,
-- dużo mocnego materiału albo proces (montaż, produkcja, ruch bramy
-  na filmie) → ok. 17-21 s materiału w 6-7 scenach,
-- nigdy nie dodawaj słabego ani powtarzającego się materiału tylko po to,
-  żeby wydłużyć rolkę — najkrótsza wersja, która pokazuje realizację,
-  jest najlepsza,
-- jakość i atrakcyjność są ważniejsze niż długość.
+- cała rolka trwa 10-25 sekund razem z planszą końcową (3,5 s),
+- gotowa realizacja: zwykle 4-5 scen (ok. 12-16 s materiału) — tyle
+  potrzeba na historię hook → dom → korzyść → detal → final,
+- 3 sceny tylko wtedy, gdy nie ma 4 RÓŻNYCH dobrych ujęć,
+- dużo mocnego materiału albo proces (montaż, produkcja, brama w ruchu
+  na filmie) → do 6-7 scen (ok. 17-21 s),
+- nie dokładaj ujęcia prawie takiego samego jak już wybrane tylko po to,
+  żeby wydłużyć rolkę.
 
 JEDNA REALIZACJA (sprawdź to NAJPIERW):
 
@@ -963,41 +1081,20 @@ JEDNA REALIZACJA (sprawdź to NAJPIERW):
 - NIGDY nie mieszaj w jednej rolce dwóch różnych posesji: widz zobaczy
   wtedy kilka różnych budynków i przekaz się rozjeżdża.
 
-KOMPOZYCJA:
+KADR I JAKOŚĆ:
 
-- zacznij od najmocniejszego wizualnie materiału,
-- następnie pokazuj realizację z różnych perspektyw,
-- przeplataj szersze ujęcia z detalami,
-- unikaj kilku bardzo podobnych zdjęć jedno po drugim,
-- zdjęcia, których takenAt różni się o kilka sekund, to zwykle prawie
-  ten sam kadr (seria) — użyj jednego z nich, a jeśli dwóch, to nigdy
-  obok siebie,
-- mocny materiał może pojawić się bliżej końca,
-- zakończ mocnym ujęciem realizacji,
-- rolka ma sprawiać wrażenie profesjonalnego materiału reklamowego, a nie pokazu wszystkich zdjęć fotografa.
-
-JAKOŚĆ KADRU (używaj pól shotType, productProminence, deadSpace):
-
-- na OTWARCIE i ZAKOŃCZENIE wybieraj ujęcie FRONTALNE, na którym brama
-  lub ogrodzenie wypełnia dużą część kadru — nigdy ujęcia bocznego,
-  oddalonego, „w perspektywie" wzdłuż płotu ani z dużym pierwszym planem
-  drogi / ziemi / muru,
-- dla filmu na otwarcie/zakończenie wybieraj fragment, którego opis mówi
-  o ujęciu frontalnym / symetrycznym / „produkt wypełnia kadr",
-- oceniaj productProminence i deadSpace WZGLĘDNIE, porównując materiały
-  między sobą w tym zestawie — progi bezwzględne nie mają sensu, bo przy
-  ogrodzeniu na murku deadSpace bywa wysoki dla wszystkich ujęć,
-- na otwarcie weź materiał z NAJWYŻSZYM productProminence w zestawie;
-  nigdy nie otwieraj ujęciem shotType="wide" ani takim z najgorszym
-  wynikiem w zestawie,
-- materiałów z dolnej połowy rankingu (niski productProminence, wysoki
-  deadSpace) użyj tylko, jeśli brakuje scen do docelowej długości,
-  i nigdy dwóch obok siebie,
-- lepiej dać 5 mocnych ujęć trochę dłuższych niż dołożyć dwa słabe,
-- shotType="macro" użyj maksymalnie raz w całej rolce i nigdy jako
-  pierwsze ani ostatnie ujęcie,
-- preferuj shotType="context" i "detail"; "wide" najwyżej jedno,
-  w środkowej części rolki.
+- ogrodzenie musi być w każdej scenie wyraźnie widoczne — ale to NIE znaczy,
+  że metal ma wypełniać cały kadr: ujęcie domu z ogrodzeniem jest cenne,
+- unikaj kadrów, w których dominuje droga, ziemia albo plac budowy,
+  a ogrodzenie jest małe i daleko,
+- productProminence, deadSpace i shotType z analizy to wskazówki
+  pomocnicze — decyduj, patrząc na obrazy,
+- shotType="macro" najwyżej raz i nigdy na start ani na koniec,
+- nie stawiaj obok siebie dwóch bardzo podobnych ujęć; zdjęcia, których
+  takenAt różni się o kilka sekund, to zwykle ten sam kadr (seria) —
+  użyj jednego z nich,
+- rolka ma wyglądać jak profesjonalny materiał reklamowy, a nie pokaz
+  wszystkich zdjęć fotografa.
 
 ZDJĘCIA:
 
@@ -1058,6 +1155,7 @@ WAŻNE:
 Zwróć wyłącznie JSON zgodny ze schematem.
               `,
             },
+            ...previews,
           ],
         },
       ],
@@ -1108,6 +1206,16 @@ Zwróć wyłącznie JSON zgodny ze schematem.
                     reason: {
                       type: "string",
                     },
+
+                    role: {
+                      type: "string",
+
+                      enum: SCENE_ROLES,
+                    },
+
+                    shows: {
+                      type: "string",
+                    },
                   },
 
                   required: [
@@ -1116,13 +1224,25 @@ Zwróć wyłącznie JSON zgodny ze schematem.
                     "duration",
                     "start",
                     "reason",
+                    "role",
+                    "shows",
                   ],
                 },
+              },
+
+              story: {
+                type: "string",
+              },
+
+              contextFile: {
+                type: "string",
               },
             },
 
             required: [
               "scenes",
+              "story",
+              "contextFile",
             ],
           },
         },
@@ -1207,6 +1327,12 @@ Zwróć wyłącznie JSON zgodny ze schematem.
 
         reason:
           scene.reason,
+
+        role: scene.role,
+
+        shows: String(
+          scene.shows ?? "",
+        ).trim(),
       });
 
       continue;
@@ -1253,6 +1379,12 @@ Zwróć wyłącznie JSON zgodny ze schematem.
 
       reason:
         scene.reason,
+
+      role: scene.role,
+
+      shows: String(
+        scene.shows ?? "",
+      ).trim(),
     });
   }
 
@@ -1386,7 +1518,37 @@ Zwróć wyłącznie JSON zgodny ze schematem.
     );
   }
 
+  /*
+   * Ujęcie kontekstowe (cała realizacja z domem) dla copywritera —
+   * tylko jeśli to naprawdę zdjęcie z zestawu.
+   */
+  const contextFile =
+    images.some(
+      (item) =>
+        item.file ===
+        plan.contextFile,
+    )
+      ? plan.contextFile
+      : "";
+
+  console.log(
+    `\nHistoria: ${plan.story}`,
+  );
+
+  uniqueScenes.forEach(
+    (scene, index) =>
+      console.log(
+        `  ${index + 1}. [${scene.role}] ${scene.fragmentId || scene.file} — ${scene.shows}`,
+      ),
+  );
+
   return {
+    story: String(
+      plan.story ?? "",
+    ).trim(),
+
+    contextFile,
+
     scenes:
       uniqueScenes,
   };

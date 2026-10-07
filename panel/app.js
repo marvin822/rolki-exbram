@@ -539,7 +539,7 @@ const renderResults = async (set) => {
 
 const LIMITS = {
   hook: 42,
-  caption: 44,
+  caption: 56,
   cover: 30,
   firstLine: 120,
 };
@@ -626,14 +626,62 @@ const renderCopyEditor = async (set) => {
     })
     .join("");
 
+  const variantCards = (plan.variants ?? [])
+    .map((variant, index) => {
+      const isChosen = index === plan.chosen;
+
+      return `
+        <article class="variant ${isChosen ? "chosen" : ""}">
+          <header class="variant-head">
+            <span class="variant-angle">${escapeHtml(variant.angle || `Wersja ${index + 1}`)}</span>
+            ${isChosen ? `<span class="variant-badge">${plan.editedByHand ? "w rolce · poprawiona ręcznie" : "w rolce"}</span>` : ""}
+          </header>
+          <p class="variant-hook">${escapeHtml(variant.hook)}</p>
+          <ol class="variant-boards">
+            ${variant.boards
+              .map(
+                (board) =>
+                  `<li><span class="variant-scenes">sc. ${board.from}${board.to > board.from ? `–${board.to}` : ""}</span> ${escapeHtml(board.text)}</li>`,
+              )
+              .join("")}
+          </ol>
+          <p class="variant-cover">Okładka: ${escapeHtml(variant.cover)}</p>
+          ${
+            variant.problems.length
+              ? `<p class="variant-problems" title="${escapeHtml(variant.problems.join("\n"))}">⚠ ${variant.problems.length} uwag kontroli</p>`
+              : ""
+          }
+          <div class="variant-actions">
+            <button class="button button-small" data-variant="${index}" ${busy || isChosen ? "disabled" : ""}>Użyj tej wersji</button>
+            <button class="button button-small button-primary" data-variant-render="${index}" ${isRunning() ? "disabled" : ""}>${isChosen ? "Renderuj" : "Użyj i renderuj"}</button>
+          </div>
+        </article>`;
+    })
+    .join("");
+
   container.innerHTML = `
+    ${
+      plan.story
+        ? `<p class="hint"><strong>Historia rolki:</strong> ${escapeHtml(plan.story)}</p>`
+        : ""
+    }
+
+    ${
+      variantCards
+        ? `<h2 class="section-title">Wersje napisów od AI</h2>
+           <p class="hint">Copywriter przygotował kilka wersji pod różnymi kątami. Wybierz jedną —
+           nowa rolka powstanie w ok. minutę, bez kosztów AI. Wybraną wersję możesz niżej poprawić ręcznie.</p>
+           <div class="variants">${variantCards}</div>`
+        : ""
+    }
+
     <p class="hint">
       ${plan.type ? `Typ materiału: <strong>${escapeHtml(plan.type)}</strong> — ${escapeHtml(plan.angle)}. ` : ""}
       Ten sam tekst na kolejnych scenach = jedna plansza trwająca przez nie.
       Po zapisaniu użyj <strong>Zapisz i renderuj</strong> — nowa wersja powstanie bez kosztów AI.
     </p>
 
-    <h2 class="section-title">Napisy na ekranie</h2>
+    <h2 class="section-title">Napisy na ekranie${plan.variants?.length ? " — wersja w rolce" : ""}</h2>
     <div class="card copy-grid">
       <div class="field-row">
         <div class="field">
@@ -685,6 +733,61 @@ const renderCopyEditor = async (set) => {
 
   $("#copy-save").addEventListener("click", () => saveCopy(false));
   $("#copy-save-render").addEventListener("click", () => saveCopy(true));
+
+  container.querySelectorAll("[data-variant]").forEach((button) =>
+    button.addEventListener("click", () =>
+      chooseVariant(Number(button.dataset.variant), false),
+    ),
+  );
+
+  container.querySelectorAll("[data-variant-render]").forEach((button) =>
+    button.addEventListener("click", () =>
+      chooseVariant(Number(button.dataset.variantRender), true),
+    ),
+  );
+};
+
+/*
+ * Przełączenie rolki na inną wersję napisów od copywritera
+ * (opcjonalnie od razu z renderem bez AI).
+ */
+const chooseVariant = async (index, andRender) => {
+  const set = currentSet();
+
+  const plan = state.plan;
+
+  if (
+    plan?.editedByHand &&
+    index !== plan.chosen &&
+    !confirm("Ręczne poprawki obecnej wersji zostaną zastąpione. Kontynuować?")
+  ) {
+    return;
+  }
+
+  try {
+    if (index !== plan?.chosen || plan?.editedByHand === false) {
+      const saved = await api(`/api/sets/${enc(set.name)}/variant`, {
+        method: "PUT",
+        body: JSON.stringify({ index }),
+      });
+
+      state.plan = { ...saved, set: set.name };
+    }
+
+    if (andRender) {
+      await startRun("render");
+
+      return;
+    }
+
+    $("#copy-editor").dataset.key = "";
+
+    renderCopyEditor(set);
+
+    toast("Wersja wybrana. Użyj „Renderuj”, żeby powstała rolka z tymi napisami.");
+  } catch (error) {
+    toast(error.message, true);
+  }
 };
 
 /*

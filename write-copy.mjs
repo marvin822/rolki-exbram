@@ -2,75 +2,70 @@ import fs from "fs";
 import path from "path";
 import OpenAI from "openai";
 
+import { makePreview } from "./media-preview.mjs";
+import { getSetDir } from "./reel-set.mjs";
+
 /*
  * Copywriter — napisy na ekran, tekst okładki i opis rolki,
- * osobno od planu montażu.
+ * pisane PO ułożeniu montażu.
  *
- * Instrukcje to brief właściciela: exbram-rolki-instrukcje-agenta.md.
- * Plik jest wczytywany przy każdym przebiegu, więc zmiana briefu
- * (fakty o firmie, ton, zakazane wzorce) działa od następnej rolki
- * bez zmian w kodzie. Kod dokłada tylko zasady wynikające z tego,
- * jak działa pipeline (rolka już zmontowana, CTA na planszy
- * końcowej, brak placeholderów na ekranie, wynik w JSON).
+ * Jedyną instrukcją treści jest brief właściciela
+ * (exbram-rolki-instrukcje-agenta.md), wczytywany przy każdym
+ * przebiegu. Kod dokłada tylko to, czego brief nie może wiedzieć:
+ * jak działa montaż i plansza końcowa oraz w jakim formacie oddać
+ * wynik. Wcześniej te dodatki były długą listą reguł, z których
+ * część przeczyła briefowi (np. zakaz CTA na ostatniej planszy) —
+ * model zgadywał, czego słuchać.
  *
- * Kod nie wierzy modelowi na słowo: sprawdza limity słów i czasu
- * czytania, zakazane wzorce z briefu, liczby spoza faktów,
- * powtórzenia, parafrazy starych hooków i ułożenie odcinków.
- * Przy problemach odsyła propozycję z listą uwag (najwyżej
- * MAX_ATTEMPTS prób), a na końcu bierze najlepszą. Błąd tego kroku
- * nie zatrzymuje rolki — powstaje wtedy bez napisów, a opis pisze
- * zapasowa ścieżka w generate-description.mjs.
+ * Copywriter OGLĄDA ujęcia rolki i jedno ujęcie całej realizacji
+ * z domem. Z samych opisów analizy („metal horizontal-slat fence”)
+ * nie dało się ocenić stylu domu, gęstości lameli ani tego, co
+ * realizacja daje klientowi — wychodziły ogólniki.
+ *
+ * Powstają 3 wersje napisów pod różnymi kątami (brief, sekcja 8).
+ * Pierwsza poprawna trafia do rolki, pozostałe można wybrać w panelu
+ * i przerenderować bez kosztów AI.
+ *
+ * Kod sprawdza każdą wersję: limity słów i czasu czytania, zakazane
+ * wzorce z briefu, liczby spoza faktów, kontakt na planszach
+ * (jest na planszy końcowej), placeholdery i emoji na ekranie.
+ * Przy uwagach wersje wracają do modelu z ich listą — najwyżej
+ * MAX_ATTEMPTS prób. Błąd kroku nie zatrzymuje rolki: powstaje bez
+ * napisów, a opis pisze zapasowa ścieżka w generate-description.mjs.
  */
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-/*
- * Copywriting to jedno krótkie zapytanie na rolkę, a od jakości
- * tekstu zależy, czy widz zostanie — tu warto mocniejszego modelu.
- */
 const COPY_MODEL = "gpt-5";
 
 const ROOT = process.cwd();
 
-const BRIEF_FILE = path.join(
-  ROOT,
-  "exbram-rolki-instrukcje-agenta.md",
-);
+const BRIEF_FILE = path.join(ROOT, "exbram-rolki-instrukcje-agenta.md");
 
-const EDIT_FILE = path.join(
-  ROOT,
-  "edit.json",
-);
+const EDIT_FILE = path.join(ROOT, "edit.json");
 
-const ANALYSIS_FILE = path.join(
-  ROOT,
-  "analysis.json",
-);
+const ANALYSIS_FILE = path.join(ROOT, "analysis.json");
 
-const VIDEO_ANALYSIS_FILE =
-  path.join(
-    ROOT,
-    "video-analysis.json",
-  );
+const VIDEO_ANALYSIS_FILE = path.join(ROOT, "video-analysis.json");
 
 /*
- * Pamięć hooków i haseł z poprzednich rolek — lokalnie, poza gitem,
- * wspólna dla wszystkich zestawów. Usunięcie pliku ją czyści.
+ * Pamięć hooków z poprzednich rolek — lokalnie, poza gitem, wspólna
+ * dla zestawów. Blokujemy tylko IDENTYCZNE hooki: dobre, sprawdzone
+ * sformułowania z briefu („Chcesz więcej prywatności?”) mogą wracać,
+ * byle nie słowo w słowo w kolejnych rolkach. Szersza blokada
+ * (parafrazy, całe tematy) pchała model w udziwnienia.
  */
-const TEXT_HISTORY_FILE =
-  path.join(
-    ROOT,
-    "work",
-    "text-history.json",
-  );
+const TEXT_HISTORY_FILE = path.join(ROOT, "work", "text-history.json");
 
 const TEXT_HISTORY_LIMIT = 24;
 
+const HOOK_HISTORY_CHECK = 12;
+
 /*
- * Limity z briefu (sekcja 4) i z rozmiaru fontu w Composition.tsx
- * (dwie linie tekstu).
+ * Limity z briefu (sekcje 10, 15, 31) i z rozmiaru fontu
+ * w Composition.tsx (dwie linie tekstu).
  */
 const HOOK_WORDS = [3, 7];
 
@@ -78,7 +73,15 @@ const HOOK_MAX_CHARS = 42;
 
 const MESSAGE_MAX_WORDS = 8;
 
-const MESSAGE_MAX_CHARS = 44;
+const MESSAGE_MAX_CHARS = 56;
+
+/*
+ * Twardy sufit — dopiero powyżej niego tekst jest przycinany. Limity
+ * wyżej sterują modelem (uwagi kontroli); przycinanie tuż za nimi
+ * urywało zdania w połowie ("Zapytaj o" bez "wycenę"), a tekst
+ * o kilka znaków dłuższy po prostu zajmie trzecią linię.
+ */
+const HARD_MAX_CHARS = 80;
 
 const MESSAGES_RANGE = [2, 5];
 
@@ -90,12 +93,14 @@ const MAX_UPPERCASE_WORDS = 3;
 
 const FIRST_LINE_MAX_CHARS = 120;
 
-const DESCRIPTION_CHARS = [
-  280,
-  650,
-];
+const DESCRIPTION_CHARS = [200, 700];
 
-const HASHTAGS_RANGE = [3, 5];
+const DESCRIPTION_MAX_EMOJI = 3;
+
+// Brief: 3-5 hasztagów razem z #exbram, który dokleja kod.
+const HASHTAGS_RANGE = [2, 4];
+
+const VARIANT_COUNT = 3;
 
 const MAX_ATTEMPTS = 3;
 
@@ -110,57 +115,66 @@ const END_CARD = {
 };
 
 /*
- * Zakazane wzorce — sekcja 6 briefu i sekcja 4.2 (zakazane hooki).
+ * Zakazane wzorce — brief, sekcje 12, 21 i 32. Zapisane małymi
+ * literami, porównywane z tekstem małymi literami.
  */
 const FORBIDDEN_PATTERNS = [
+  "zobacz naszą realizację",
+  "nowa realizacja",
+  "kolejna realizacja",
+  "sprawdź naszą ofertę",
+  "solidnie i stylowo",
+  "solidne i stylowe",
+  "piękne ogrodzenie",
+  "nowoczesne rozwiązanie dla twojego domu",
+  "elegancja i funkcjonalność",
+  "elegancja i nowoczesność",
+  "styl i funkcjonalność",
+  "ogrodzenie z charakterem",
   "najwyższa jakość",
   "najwyższej jakości",
-  "solidne i stylowe",
-  "wizytówk",
   "perfekcyjn",
-  "idealn",
+  "najlepsze rozwiązanie",
+  "idealne połączenie",
+  "idealne rozwiązanie",
+  "design spotyka",
+  "wizytówk",
+  "piękno tkwi",
+  "w najlepszym wydaniu",
+  "robi wrażenie",
+  "premium",
   "zobaczcie",
   "w tym filmie",
   "przedstawiamy",
   "prezentujemy",
   "z dumą",
-  "nowa realizacja",
-  "zobacz naszą",
   "czekaj do końca",
-  "wyobraź",
+  "wyobraź sobie",
+  "zwala z nóg",
+  "niesamowit",
+  "sztos",
+  "najlepsze ogrodzenia",
+  "najtrwalsze",
+  "bezobsługow",
+  "najtańsz",
   "najtaniej",
   "bez marży",
-  // Tylko strona główna — bez linków do podstron (brief, sekcja 2).
+  // Tylko strona główna — bez linków do podstron (brief, sekcja 4).
   "kalkulator",
   "exbram.pl/",
 ];
 
 /*
- * Słowa, które model brał, gdy nie miał nic konkretnego do
- * powiedzenia — brzmią jak opis architekta, nie jak reklama.
+ * Obietnice, których ogrodzenie nie spełnia — lamele i panele są
+ * ażurowe, nie tłumią dźwięku ani wiatru (brief, sekcja 22).
  */
-const EMPTY_WORDS = [
-  "kompozycj",
-  "harmoni",
-  "rytmik",
-  "przestrze",
-  "element",
-  "całość",
-  "estetyk",
-];
+const FALSE_PROMISES = ["cisz", "hałas", "wycisz", "akustyc", "wiatr", "kurz"];
 
 /*
- * Obietnice, których ogrodzenie nie spełnia — lamele i panele są
- * ażurowe, nie tłumią dźwięku.
+ * Puste słowa architekta — model sięgał po nie, gdy nie miał nic
+ * konkretnego do powiedzenia.
  */
-const FALSE_PROMISES = [
-  "cisz",
-  "hałas",
-  "wycisz",
-  "akustyc",
-  "wiatr",
-  "kurz",
-];
+const EMPTY_WORDS = ["kompozycj", "harmoni", "rytmik"];
 
 const QUESTION_STARTS = [
   "chcesz",
@@ -171,218 +185,64 @@ const QUESTION_STARTS = [
   "myślisz",
   "czy",
   "jak",
+  "jaki",
+  "jaka",
+  "jakie",
   "ile",
   "dlaczego",
-];
-
-/*
- * Rdzeń słowa do porównań: pierwsze 5 liter (polska fleksja zmienia
- * końcówki). Krótsze słowa, wypełniacze i nazwy produktów nie liczą
- * się do powtórzeń — brief każe powtarzać nazwy, jakich szuka
- * klient ("brama przesuwna"), bo platformy czytają tekst z ekranu.
- */
-const STEM_LENGTH = 5;
-
-const FILLER_PREFIXES = [
-  "któr",
-  "przez",
-  "swoj",
-  "twoj",
-  "takie",
-  "takim",
-  "każd",
-  "siebi",
-  "tylko",
-  "wszys",
-  "bardz",
-  "jeszc",
-  "zawsz",
-];
-
-const PRODUCT_PREFIXES = [
-  "ogrod",
-  "bram",
-  "furtk",
-  "lamel",
-  "palis",
-  "panel",
-  "przęs",
-  "stal",
-  "ocynk",
-  "prosz",
-  "balus",
-  "autom",
-  "grzeb",
-  "żaluz",
-  "przes",
-  "dwusk",
-  "połów",
-  "exbra",
+  "nie chcesz",
 ];
 
 const toWords = (text) =>
   String(text)
     .toLowerCase()
-    .split(
-      /[^a-ząćęłńóśźż0-9]+/u,
-    )
+    .split(/[^a-ząćęłńóśźż0-9]+/u)
     .filter(Boolean);
 
 const countWords = (text) =>
   String(text)
     .split(/\s+/)
-    .filter((word) =>
-      /[\p{L}\p{N}]/u.test(word),
-    ).length;
+    .filter((word) => /[\p{L}\p{N}]/u.test(word)).length;
 
-const getStemList = (text) =>
-  toWords(text)
-    .filter(
-      (word) =>
-        word.length >=
-          STEM_LENGTH &&
-        !/^\d/.test(word) &&
-        ![
-          ...FILLER_PREFIXES,
-          ...PRODUCT_PREFIXES,
-        ].some((prefix) =>
-          word.startsWith(prefix),
-        ),
-    )
-    .map((word) =>
-      word.slice(
-        0,
-        STEM_LENGTH,
-      ),
-    );
-
-const getStems = (text) =>
-  new Set(
-    getStemList(text),
-  );
-
-/*
- * Parafraza hooka z historii: to samo pierwsze słowo treściowe
- * i co najmniej połowa słów wspólna, albo co najmniej dwa wspólne
- * słowa treściowe.
- */
-const isParaphrase = (
-  text,
-  previous,
-) => {
-  const list =
-    getStemList(text);
-
-  const previousList =
-    getStemList(previous);
-
-  const stems = new Set(list);
-
-  const previousStems =
-    new Set(previousList);
-
-  const smaller = Math.min(
-    stems.size,
-    previousStems.size,
-  );
-
-  if (smaller === 0) {
-    return false;
-  }
-
-  let shared = 0;
-
-  stems.forEach((stem) => {
-    if (
-      previousStems.has(stem)
-    ) {
-      shared += 1;
-    }
-  });
-
-  return (
-    shared >= 2 ||
-    (list[0] ===
-      previousList[0] &&
-      shared / smaller >= 0.5)
-  );
-};
+const normalizeForCompare = (text) =>
+  toWords(text).join(" ");
 
 /*
  * Liczby w tekście, znormalizowane: "5 075 zł" → "5075",
  * "1,6 m" → "1,6".
  */
 const getNumbers = (text) =>
-  (
-    String(text).match(
-      /\d[\d\s]*(?:[.,]\d+)?/g,
-    ) ?? []
-  ).map((number) =>
-    number
-      .replace(/\s+/g, "")
-      .replace(/[.,]$/, ""),
+  (String(text).match(/\d[\d\s]*(?:[.,]\d+)?/g) ?? []).map((number) =>
+    number.replace(/\s+/g, "").replace(/[.,]$/, ""),
   );
 
-const readJson = (
-  filePath,
-  fallback,
-) => {
+const readJson = (filePath, fallback) => {
   try {
-    return JSON.parse(
-      fs.readFileSync(
-        filePath,
-        "utf8",
-      ),
-    );
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
   } catch {
     return fallback;
   }
 };
 
 const readTextHistory = () => {
-  const stored = readJson(
-    TEXT_HISTORY_FILE,
-    [],
-  );
+  const stored = readJson(TEXT_HISTORY_FILE, []);
 
   return Array.isArray(stored)
-    ? stored.filter(
-        (item) =>
-          typeof item ===
-          "string",
-      )
+    ? stored.filter((item) => typeof item === "string")
     : [];
 };
 
-const rememberTexts = (
-  texts,
-) => {
-  const merged = [
-    ...new Set([
-      ...texts,
-      ...readTextHistory(),
-    ]),
-  ].slice(
+const rememberTexts = (texts) => {
+  const merged = [...new Set([...texts, ...readTextHistory()])].slice(
     0,
     TEXT_HISTORY_LIMIT,
   );
 
-  fs.mkdirSync(
-    path.dirname(
-      TEXT_HISTORY_FILE,
-    ),
-    {
-      recursive: true,
-    },
-  );
+  fs.mkdirSync(path.dirname(TEXT_HISTORY_FILE), { recursive: true });
 
   fs.writeFileSync(
     TEXT_HISTORY_FILE,
-    `${JSON.stringify(
-      merged,
-      null,
-      2,
-    )}\n`,
+    `${JSON.stringify(merged, null, 2)}\n`,
     "utf8",
   );
 };
@@ -397,406 +257,327 @@ const cleanText = (value) =>
     .replace(/\.+$/, "");
 
 /*
- * Ostatnia deska ratunku, gdy po wszystkich próbach tekst wciąż
- * jest za długi: przycięcie na granicy słowa, żeby zmieścił się
- * w kadrze.
+ * Ostatnia deska ratunku, gdy po wszystkich próbach tekst wciąż jest
+ * za długi: przycięcie na granicy słowa, żeby zmieścił się w kadrze.
  */
-const fitText = (
-  text,
-  maxChars,
-) => {
-  if (
-    text.length <= maxChars
-  ) {
+const fitText = (text, maxChars) => {
+  if (text.length <= maxChars) {
     return text;
   }
 
   return text
     .slice(0, maxChars + 1)
     .replace(/\s+\S*$/, "")
-    .replace(
-      /[,;:–-]+$/,
-      "",
-    );
+    .replace(/[,;:–-]+$/, "");
+};
+
+/*
+ * Wyróżnienie musi być fragmentem tekstu — inaczej kompozycja nie
+ * ma czego pokolorować.
+ */
+const cleanHighlight = (highlight, text) => {
+  const value = cleanText(highlight);
+
+  return value && text.toLowerCase().includes(value.toLowerCase())
+    ? value
+    : "";
 };
 
 const readBrief = () => {
-  if (
-    !fs.existsSync(BRIEF_FILE)
-  ) {
-    throw new Error(
-      `Brak briefu ${BRIEF_FILE}.`,
-    );
+  if (!fs.existsSync(BRIEF_FILE)) {
+    throw new Error(`Brak briefu ${BRIEF_FILE}.`);
   }
 
-  return fs.readFileSync(
-    BRIEF_FILE,
-    "utf8",
-  );
+  return fs.readFileSync(BRIEF_FILE, "utf8");
 };
 
 /*
- * Fakty o firmie = sekcja 2 briefu. Liczby z niej (ceny, telefon)
- * wolno pokazać na ekranie; liczby z przykładów w dalszych sekcjach
- * już nie.
+ * Fakty o firmie = sekcja briefu z „Fakty o EXBRAM” w nagłówku, do
+ * następnego nagłówka tego samego albo wyższego poziomu. Liczby
+ * z niej (ceny, telefon, 20 lat) wolno pokazać; liczby z przykładów
+ * w dalszych sekcjach („6-metrowa brama”) już nie.
  */
-const getFactsSection = (
-  brief,
-) => {
-  const start =
-    brief.indexOf("## 2.");
+const getFactsSection = (brief) => {
+  const lines = brief.split(/\r?\n/);
 
-  const end = brief.indexOf(
-    "## 3.",
-    start,
+  const start = lines.findIndex(
+    (line) => /^#{1,6}\s/.test(line) && /fakty o exbram/i.test(line),
   );
 
-  return start === -1
-    ? ""
-    : brief.slice(
-        start,
-        end === -1
-          ? undefined
-          : end,
-      );
+  if (start === -1) {
+    return "";
+  }
+
+  const level = lines[start].match(/^#+/)[0].length;
+
+  const end = lines.findIndex(
+    (line, index) =>
+      index > start &&
+      /^#{1,6}\s/.test(line) &&
+      line.match(/^#+/)[0].length <= level,
+  );
+
+  return lines.slice(start, end === -1 ? undefined : end).join("\n");
 };
 
 /*
- * Opisy scen dla copywritera: co widać na ujęciu. Zdjęcia mają
- * subject z analizy, fragmenty filmów — uzasadnienie z analizy
- * szczegółowej (pole reason).
+ * Sceny rolki dla copywritera: rola w historii, czas i opis od
+ * planera (co widać z punktu widzenia klienta), a w razie braku —
+ * opis z analizy kadru.
  */
-const describeScenes = (
-  scenes,
-) => {
-  const photos = readJson(
-    ANALYSIS_FILE,
-    [],
-  );
+const describeScenes = (scenes) => {
+  const photos = readJson(ANALYSIS_FILE, []);
 
-  const videos = readJson(
-    VIDEO_ANALYSIS_FILE,
-    [],
-  );
+  const videos = readJson(VIDEO_ANALYSIS_FILE, []);
 
   const fragments = new Map();
 
   videos.forEach((video) => {
-    (video.fragments ?? []).forEach(
-      (fragment) => {
-        fragments.set(
-          fragment.fragmentId,
-          fragment,
-        );
-      },
-    );
+    (video.fragments ?? []).forEach((fragment) => {
+      fragments.set(fragment.fragmentId, fragment);
+    });
   });
 
   let elapsed = 0;
 
-  return scenes.map(
-    (scene, index) => {
-      const from = elapsed;
+  return scenes.map((scene, index) => {
+    const from = elapsed;
 
-      elapsed += Number(
-        scene.duration,
-      );
+    elapsed += Number(scene.duration);
 
-      const timing = `${from.toFixed(1)}-${elapsed.toFixed(1)} s`;
-
-      if (scene.fragmentId) {
-        const fragment =
-          fragments.get(
-            scene.fragmentId,
-          );
-
-        return {
-          scene: index + 1,
-          type: "film",
-          time: timing,
-          shows: String(
-            fragment?.reason ??
-              "",
-          ).slice(0, 400),
-        };
-      }
-
-      const photo =
-        photos.find(
-          (item) =>
-            item.file ===
-            scene.file,
+    const fallback = scene.fragmentId
+      ? String(fragments.get(scene.fragmentId)?.reason ?? "")
+      : String(
+          photos.find((item) => item.file === scene.file)?.subject ?? "",
         );
 
-      return {
-        scene: index + 1,
-        type: "zdjęcie",
-        time: timing,
-        shows:
-          photo?.subject ?? "",
-        shotType:
-          photo?.shotType ?? "",
-      };
-    },
-  );
-};
-
-const buildPrompt = ({
-  brief,
-  sceneList,
-  history,
-  feedback,
-}) => {
-  const sceneCount =
-    sceneList.length;
-
-  const total =
-    sceneList.at(-1)?.time
-      ?.split("-")[1] ?? "";
-
-  return `
-${brief}
-
-==========================================================
-ZASADY TEGO PIPELINE'U — mają PIERWSZEŃSTWO przed briefem powyżej
-==========================================================
-
-1. Rolka jest JUŻ zmontowana: ${sceneCount} scen, materiał ${total},
-   potem 3,5 s planszy końcowej. Nie zmieniasz ujęć ani długości —
-   dobierasz TYP i KĄT do tego, co jest w scenach, i piszesz teksty.
-
-2. Jedyne CTA rolki to PLANSZA KOŃCOWA, która wchodzi automatycznie
-   po ostatniej scenie: logo, hasło "Ogrodzenia, które robią różnicę",
-   "${END_CARD.cta}", tel. ${END_CARD.phone}, ${END_CARD.web}.
-   Dlatego Twoja ostatnia plansza tekstowa NIE jest CTA — daje
-   najmocniejszy konkret, który naturalnie prowadzi do wyceny.
-
-3. Plansze = hook (na scenie 1) + ${MESSAGES_RANGE[0]}-${MESSAGES_RANGE[1]} plansz (messages)
-   na sceny 2-${sceneCount}; razem 3-6 plansz. Każda plansza obejmuje
-   1-${MAX_SCENES_PER_MESSAGE} KOLEJNE sceny (fromScene..toScene), których dotyczy —
-   zmienia się z cięciem. Od sceny 2 najwyżej jedna scena z rzędu
-   bez napisu. Czas czytania: plansza musi stać co najmniej
-   0,3 s na słowo + 0,5 s (min. 1,5 s) — sprawdź czasy scen.
-
-4. Na ekranie i w okładce NIGDY nie wstawiaj "[UZUPEŁNIJ…]" ani liczb,
-   których nie ma w faktach (sekcja 2 briefu) ani w opisie sceny —
-   napisz planszę bez tej liczby. To, czego brakuje (wymiar, RAL,
-   lokalizacja…), wypisz w polu "missing".
-
-5. Bez emoji na ekranie i w okładce (font ich nie ma).
-
-6. hookHighlight / highlight: jedno słowo albo krótka fraza skopiowana
-   DOKŁADNIE z tekstu planszy (zwykle słowo kluczowe produktu) —
-   pokażemy je kolorem akcentu. Może być "".
-
-7. Ogrodzenie nie wycisza hałasu i nie chroni przed wiatrem ani
-   kurzem (lamele i panele są ażurowe) — bez takich obietnic.
-
-8. Hook nie może powtarzać ani parafrazować hooków z poprzednich rolek
-   (lista na końcu). Nazwy produktów ("brama przesuwna") wolno powtarzać.
-
-9. Opis: firstLine (do ${FIRST_LINE_MAX_CHARS} znaków, drugi hook), body (2-4 krótkie
-   akapity konkretów oddzielone \\n\\n), hashtags (${HASHTAGS_RANGE[0]}-${HASHTAGS_RANGE[1]} tematycznych,
-   bez "#", bez "exbram" — dodamy). CTA dokleja kod:
-   "Darmowa wycena: ${END_CARD.phone} lub ${END_CARD.web}" — NIE pisz CTA
-   ani danych kontaktowych w body. Placeholderów nie wstawiaj także
-   w opisie — braki idą do "missing". Całość opisu z CTA ok. 300-600 znaków.
-
-10. Wynik zwróć jako JSON według schematu (zamiast formatu z sekcji 7
-    briefu). hookVariants = dwa warianty hooka, hook = wybrany.
-
-SCENY ROLKI (kolejność montażu, czasy materiału):
-${JSON.stringify(sceneList, null, 2)}
-
-HOOKI I HASŁA Z POPRZEDNICH ROLEK (hooka nie powtarzaj ani nie parafrazuj):
-${history.length > 0 ? history.map((text) => `- ${text}`).join("\n") : "(brak)"}
-${feedback ? `\nTWOJA POPRZEDNIA PROPOZYCJA MIAŁA PROBLEMY — popraw je:\n${feedback}\n` : ""}`;
-};
-
-const requestCopy = async (
-  prompt,
-) => {
-  const response =
-    await client.responses.create({
-      model: COPY_MODEL,
-
-      input: [
-        {
-          role: "user",
-
-          content: [
-            {
-              type: "input_text",
-              text: prompt,
-            },
-          ],
-        },
-      ],
-
-      text: {
-        format: {
-          type: "json_schema",
-
-          name: "reel_copy",
-
-          strict: true,
-
-          schema: {
-            type: "object",
-
-            additionalProperties: false,
-
-            properties: {
-              type: {
-                type: "string",
-              },
-
-              angle: {
-                type: "string",
-              },
-
-              hookVariants: {
-                type: "array",
-
-                items: {
-                  type: "string",
-                },
-              },
-
-              hook: {
-                type: "string",
-              },
-
-              hookHighlight: {
-                type: "string",
-              },
-
-              messages: {
-                type: "array",
-
-                items: {
-                  type: "object",
-
-                  additionalProperties: false,
-
-                  properties: {
-                    text: {
-                      type: "string",
-                    },
-
-                    highlight: {
-                      type: "string",
-                    },
-
-                    fromScene: {
-                      type: "integer",
-                    },
-
-                    toScene: {
-                      type: "integer",
-                    },
-                  },
-
-                  required: [
-                    "text",
-                    "highlight",
-                    "fromScene",
-                    "toScene",
-                  ],
-                },
-              },
-
-              cover: {
-                type: "string",
-              },
-
-              description: {
-                type: "object",
-
-                additionalProperties: false,
-
-                properties: {
-                  firstLine: {
-                    type: "string",
-                  },
-
-                  body: {
-                    type: "string",
-                  },
-
-                  hashtags: {
-                    type: "array",
-
-                    items: {
-                      type: "string",
-                    },
-                  },
-                },
-
-                required: [
-                  "firstLine",
-                  "body",
-                  "hashtags",
-                ],
-              },
-
-              missing: {
-                type: "array",
-
-                items: {
-                  type: "string",
-                },
-              },
-            },
-
-            required: [
-              "type",
-              "angle",
-              "hookVariants",
-              "hook",
-              "hookHighlight",
-              "messages",
-              "cover",
-              "description",
-              "missing",
-            ],
-          },
-        },
-      },
-    });
-
-  if (
-    !response.output_text
-  ) {
-    throw new Error(
-      "AI nie zwróciło napisów.",
-    );
-  }
-
-  return JSON.parse(
-    response.output_text,
-  );
+    return {
+      scene: index + 1,
+      type: scene.fragmentId ? "film" : "zdjęcie",
+      role: scene.role ?? "",
+      time: `${from.toFixed(1)}-${elapsed.toFixed(1)} s`,
+      shows: (scene.shows || fallback).slice(0, 400),
+    };
+  });
 };
 
 /*
- * Wyróżnienie musi być fragmentem tekstu — inaczej Composition
- * nie ma czego pokolorować.
+ * Obrazy dla copywritera: każda scena rolki (dla filmu — środek
+ * fragmentu) i ujęcie całej realizacji z domem, jeśli planer je
+ * wskazał, a nie ma go w scenach.
  */
-const cleanHighlight = (
-  highlight,
-  text,
-) => {
-  const value =
-    cleanText(highlight);
+const buildScenePreviews = (editPlan) => {
+  const setDir = getSetDir(editPlan.set);
 
-  return value &&
-    text
-      .toLowerCase()
-      .includes(
-        value.toLowerCase(),
-      )
-    ? value
-    : "";
+  const content = [];
+
+  editPlan.scenes.forEach((scene, index) => {
+    const preview = makePreview(
+      path.join(setDir, scene.file),
+      scene.fragmentId
+        ? {
+            seekSeconds:
+              Number(scene.start ?? 0) + Number(scene.duration ?? 0) / 2,
+          }
+        : {},
+    );
+
+    if (preview) {
+      content.push(
+        {
+          type: "input_text",
+          text: `SCENA ${index + 1}`,
+        },
+        {
+          type: "input_image",
+          image_url: preview,
+          detail: "low",
+        },
+      );
+    }
+  });
+
+  const contextFile = editPlan.contextFile;
+
+  if (
+    contextFile &&
+    !editPlan.scenes.some((scene) => scene.file === contextFile)
+  ) {
+    const preview = makePreview(path.join(setDir, contextFile));
+
+    if (preview) {
+      content.push(
+        {
+          type: "input_text",
+          text: "CAŁA REALIZACJA Z DOMEM (poza montażem — dla kontekstu)",
+        },
+        {
+          type: "input_image",
+          image_url: preview,
+          detail: "low",
+        },
+      );
+    }
+  }
+
+  return content;
+};
+
+const buildPrompt = ({ brief, editPlan, sceneList, history, feedback }) => {
+  const sceneCount = sceneList.length;
+
+  const total = sceneList.at(-1)?.time?.split("-")[1] ?? "";
+
+  return `${brief}
+
+==========================================================
+JAK DZIAŁA TEN MONTAŻ — dopełnienie briefu
+==========================================================
+
+Rolka jest JUŻ zmontowana: ${sceneCount} scen, materiał ${total}, potem
+3,5 s planszy końcowej. Obrazy scen są poniżej (SCENA 1, 2, …) — oglądaj
+je, a opisy scen traktuj jako pomoc. Ujęć ani ich długości nie zmieniasz.
+
+Historia od montażysty: ${editPlan.story || "(brak)"}
+
+SCENY:
+${JSON.stringify(sceneList, null, 2)}
+
+Co z tego wynika dla napisów:
+
+1. Hook stoi na scenie 1. Kolejne plansze (messages) obejmują 1-${MAX_SCENES_PER_MESSAGE}
+   KOLEJNE sceny (fromScene..toScene, od sceny 2) i zmieniają się z cięciem —
+   jedna plansza = jedna myśl o tym, co widać w jej scenach. Od sceny 2 do
+   końca najwyżej jedna scena z rzędu bez napisu.
+
+2. Po ostatniej scenie wchodzi automatycznie plansza końcowa: logo,
+   "Ogrodzenia, które robią różnicę", "${END_CARD.cta}", tel. ${END_CARD.phone},
+   ${END_CARD.web}. Ostatnia plansza tekstowa może więc być miękkim CTA
+   z briefu (np. pytanie o podobny efekt) — ale BEZ telefonu, adresu
+   strony i e-maila: te są na planszy końcowej.
+
+3. Na ekranie i w okładce nie ma "[UZUPEŁNIJ…]": napisz planszę bez
+   brakującej danej, a brak dopisz do "missing". Bez emoji na ekranie
+   (font ich nie ma). W opisie też bez placeholderów — braki idą do
+   "missing" i trafią pod opis jako lista do uzupełnienia.
+
+4. Klient dobiera ogrodzenie do swojego domu — możesz pisać, do jakiego
+   domu pasuje ten styl, jeśli wynika to z obrazów.
+
+5. Przygotuj ${VARIANT_COUNT} WERSJE napisów, każdą pod INNYM kątem z sekcji 8
+   briefu (np. prywatność / dopasowanie do architektury / inspiracja),
+   najlepszą jako pierwszą. Każda wersja to komplet: hook, plansze,
+   okładka, opis.
+
+6. hookHighlight / highlight: 1-2 słowa skopiowane DOKŁADNIE z tekstu
+   planszy — pokażemy je kolorem akcentu. Może być "".
+
+7. Opis (sekcja 29 briefu): firstLine (do ${FIRST_LINE_MAX_CHARS} znaków), body
+   (2-4 krótkie akapity oddzielone \\n\\n), hashtags (${HASHTAGS_RANGE[0]}-${HASHTAGS_RANGE[1]} tematyczne,
+   bez "#" i bez "exbram" — dodamy). CTA "Darmowa wycena: ${END_CARD.phone} lub
+   ${END_CARD.web}" dokleja kod — nie pisz go w body.
+
+8. Wynik zwróć jako JSON według schematu — zamiast formatu z sekcji 34
+   briefu. Analizę z sekcji 34 wpisz w pole analysis.
+
+HOOKI Z POPRZEDNICH ROLEK (nie powtarzaj ich słowo w słowo):
+${history.length > 0 ? history.map((text) => `- ${text}`).join("\n") : "(brak)"}
+${feedback ? `\nPOPRZEDNIA PROPOZYCJA MIAŁA PROBLEMY — popraw je:\n${feedback}\n` : ""}`;
+};
+
+const MESSAGE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    text: { type: "string" },
+    highlight: { type: "string" },
+    fromScene: { type: "integer" },
+    toScene: { type: "integer" },
+  },
+  required: ["text", "highlight", "fromScene", "toScene"],
+};
+
+const VARIANT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    angle: { type: "string" },
+    hook: { type: "string" },
+    hookHighlight: { type: "string" },
+    messages: { type: "array", items: MESSAGE_SCHEMA },
+    cover: { type: "string" },
+    description: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        firstLine: { type: "string" },
+        body: { type: "string" },
+        hashtags: { type: "array", items: { type: "string" } },
+      },
+      required: ["firstLine", "body", "hashtags"],
+    },
+    missing: { type: "array", items: { type: "string" } },
+  },
+  required: [
+    "angle",
+    "hook",
+    "hookHighlight",
+    "messages",
+    "cover",
+    "description",
+    "missing",
+  ],
+};
+
+const requestCopy = async (content) => {
+  const response = await client.responses.create({
+    model: COPY_MODEL,
+
+    input: [
+      {
+        role: "user",
+        content,
+      },
+    ],
+
+    text: {
+      format: {
+        type: "json_schema",
+        name: "reel_copy",
+        strict: true,
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            // Typ materiału z sekcji 7 briefu.
+            type: {
+              type: "string",
+              enum: ["A", "B", "C", "D", "E", "F", "G", "H"],
+            },
+            analysis: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                atut: { type: "string" },
+                potrzeba: { type: "string" },
+                efekt: { type: "string" },
+                dlaczego: { type: "string" },
+              },
+              required: ["atut", "potrzeba", "efekt", "dlaczego"],
+            },
+            variants: { type: "array", items: VARIANT_SCHEMA },
+          },
+          required: ["type", "analysis", "variants"],
+        },
+      },
+    },
+  });
+
+  if (!response.output_text) {
+    throw new Error("AI nie zwróciło napisów.");
+  }
+
+  return JSON.parse(response.output_text);
 };
 
 /*
@@ -805,147 +586,126 @@ const cleanHighlight = (
  * łata, przedłużając sąsiednią planszę w granicach
  * MAX_SCENES_PER_MESSAGE.
  */
-const normalizeSpans = (
-  messages,
-  sceneCount,
-) => {
+const normalizeSpans = (messages, sceneCount) => {
   const spans = [];
 
   [...messages]
     .map((message) => {
-      const text = cleanText(
-        message.text,
-      );
+      const text = screenText(message.text);
 
       return {
         text,
-        highlight:
-          cleanHighlight(
-            message.highlight,
-            text,
-          ),
-        from: Math.max(
-          2,
-          Math.round(
-            message.fromScene,
-          ),
-        ),
-        to: Math.min(
-          sceneCount,
-          Math.round(
-            message.toScene,
-          ),
-        ),
+        highlight: cleanHighlight(message.highlight, text),
+        from: Math.max(2, Math.round(message.fromScene)),
+        to: Math.min(sceneCount, Math.round(message.toScene)),
       };
     })
-    .filter(
-      (span) =>
-        span.text &&
-        span.from <= span.to,
-    )
-    .sort(
-      (a, b) =>
-        a.from - b.from,
-    )
+    .filter((span) => span.text && span.from <= span.to)
+    .sort((a, b) => a.from - b.from)
     .forEach((span) => {
-      const last =
-        spans[
-          spans.length - 1
-        ];
+      const last = spans[spans.length - 1];
 
       if (
-        spans.length >=
-          MESSAGES_RANGE[1] ||
-        (last &&
-          span.from <=
-            last.to)
+        spans.length >= MESSAGES_RANGE[1] ||
+        (last && span.from <= last.to)
       ) {
         return;
       }
 
       spans.push({
         ...span,
-        to: Math.min(
-          span.to,
-          span.from +
-            MAX_SCENES_PER_MESSAGE -
-            1,
-        ),
+        to: Math.min(span.to, span.from + MAX_SCENES_PER_MESSAGE - 1),
       });
     });
 
-  const length = (span) =>
-    span.to - span.from + 1;
+  const length = (span) => span.to - span.from + 1;
 
   while (
     spans.length > 0 &&
     spans[0].from - 2 > 1 &&
-    length(spans[0]) <
-      MAX_SCENES_PER_MESSAGE
+    length(spans[0]) < MAX_SCENES_PER_MESSAGE
   ) {
     spans[0].from -= 1;
   }
 
-  spans.forEach(
-    (span, index) => {
-      const nextFrom =
-        spans[index + 1]?.from ??
-        sceneCount + 1;
+  spans.forEach((span, index) => {
+    const nextFrom = spans[index + 1]?.from ?? sceneCount + 1;
 
-      while (
-        nextFrom -
-          span.to -
-          1 >
-          1 &&
-        length(span) <
-          MAX_SCENES_PER_MESSAGE
-      ) {
-        span.to += 1;
-      }
-    },
-  );
+    while (
+      nextFrom - span.to - 1 > 1 &&
+      length(span) < MAX_SCENES_PER_MESSAGE
+    ) {
+      span.to += 1;
+    }
+  });
 
   return spans;
 };
 
 /*
+ * Tekst na ekran: strzałki i podobne symbole rysowałyby się czcionką
+ * zapasową (Montserrat ich nie ma), więc zamieniamy je na półpauzę.
+ */
+const screenText = (value) =>
+  cleanText(value).replace(/\s*[→⇒➔➜]\s*/g, " – ");
+
+const normalizeVariant = (raw, sceneCount) => {
+  const hook = screenText(raw.hook);
+
+  return {
+    angle: cleanText(raw.angle),
+    hook,
+    hookHighlight: cleanHighlight(raw.hookHighlight, hook),
+    spans: normalizeSpans(raw.messages ?? [], sceneCount),
+    cover: screenText(raw.cover),
+    description: {
+      firstLine: cleanText(raw.description?.firstLine),
+      body: String(raw.description?.body ?? "")
+        .replace(/\r\n/g, "\n")
+        .trim(),
+      hashtags: (raw.description?.hashtags ?? [])
+        .map((tag) =>
+          String(tag).replace(/^#+/, "").replace(/\s+/g, "").trim(),
+        )
+        .filter((tag) => tag && tag.toLowerCase() !== "exbram"),
+    },
+    missing: (raw.missing ?? []).map(cleanText).filter(Boolean),
+  };
+};
+
+/*
  * Problemy pojedynczego tekstu ekranowego (hook, plansza, okładka).
  */
-const checkScreenText = (
-  text,
-  label,
-  allowedNumbers,
-) => {
+const checkScreenText = (text, label, allowedNumbers) => {
   const problems = [];
 
-  const lower =
-    text.toLowerCase();
+  const lower = text.toLowerCase();
 
   const words = toWords(text);
 
-  if (
-    /\[|uzupe/i.test(text)
-  ) {
+  if (/\[|uzupe/i.test(text)) {
     problems.push(
       `${label} "${text}" zawiera placeholder — na ekranie go nie wstawiaj, brak wpisz do missing`,
     );
   }
 
+  if (/\p{Extended_Pictographic}/u.test(text)) {
+    problems.push(`${label} "${text}" zawiera emoji — na ekranie bez emoji`);
+  }
+
   if (
-    /\p{Extended_Pictographic}/u.test(
-      text,
-    )
+    lower.includes("exbram.pl") ||
+    lower.includes("@") ||
+    getNumbers(text).some((number) => number.replace(/\D/g, "").length >= 9)
   ) {
     problems.push(
-      `${label} "${text}" zawiera emoji — na ekranie bez emoji`,
+      `${label} "${text}" zawiera kontakt — telefon i strona są na planszy końcowej`,
     );
   }
 
-  const forbidden =
-    FORBIDDEN_PATTERNS.find(
-      (pattern) =>
-        lower.includes(pattern),
-    );
+  const forbidden = FORBIDDEN_PATTERNS.find((pattern) =>
+    lower.includes(pattern),
+  );
 
   if (forbidden) {
     problems.push(
@@ -953,31 +713,17 @@ const checkScreenText = (
     );
   }
 
-  const empty =
-    EMPTY_WORDS.find(
-      (prefix) =>
-        words.some((word) =>
-          word.startsWith(
-            prefix,
-          ),
-        ),
-    );
+  const empty = EMPTY_WORDS.find((prefix) =>
+    words.some((word) => word.startsWith(prefix)),
+  );
 
   if (empty) {
-    problems.push(
-      `${label} "${text}" zawiera puste słowo (${empty}…)`,
-    );
+    problems.push(`${label} "${text}" zawiera puste słowo (${empty}…)`);
   }
 
-  const promise =
-    FALSE_PROMISES.find(
-      (prefix) =>
-        words.some((word) =>
-          word.startsWith(
-            prefix,
-          ),
-        ),
-    );
+  const promise = FALSE_PROMISES.find((prefix) =>
+    words.some((word) => word.startsWith(prefix)),
+  );
 
   if (promise) {
     problems.push(
@@ -985,65 +731,52 @@ const checkScreenText = (
     );
   }
 
+  const opening = words.slice(0, 2).join(" ");
+
   if (
-    QUESTION_STARTS.includes(
-      words[0] ?? "",
+    QUESTION_STARTS.some(
+      (start) => opening === start || opening.startsWith(`${start} `),
     ) &&
     !text.includes("?")
   ) {
-    problems.push(
-      `${label} "${text}" to pytanie — musi mieć znak zapytania`,
-    );
+    problems.push(`${label} "${text}" to pytanie — musi mieć znak zapytania`);
   }
+
+  if ((text.match(/[?!]/g) ?? []).length > 1) {
+    problems.push(`${label} "${text}" — najwyżej jeden znak ? lub !`);
+  }
+
+  /*
+   * Sztuczne trójki z briefu: „Szybko. Solidnie. Terminowo” —
+   * trzy (i więcej) jednowyrazowe hasła. „Wracasz autem. Klikasz.
+   * Wjeżdżasz” (przykład z briefu) przechodzi.
+   */
+  const segments = text
+    .split(/[.!?]\s+/)
+    .map((segment) => segment.trim())
+    .filter(Boolean);
 
   if (
-    (text.match(/[?!]/g) ?? [])
-      .length > 1
+    segments.length >= 3 &&
+    segments.every((segment) => countWords(segment) === 1)
   ) {
-    problems.push(
-      `${label} "${text}" — najwyżej jeden znak ? lub !`,
-    );
+    problems.push(`${label} "${text}" to sztuczna trójka — zakazana w briefie`);
   }
 
-  // Trójki rytmiczne: "Szybko. Solidnie. Terminowo"
-  if (
-    (text.match(/\.\s/g) ?? [])
-      .length >= 2
-  ) {
-    problems.push(
-      `${label} "${text}" to trójka rytmiczna — zakazana w briefie`,
-    );
-  }
-
-  const uppercase = String(
-    text,
-  )
+  const uppercase = text
     .split(/\s+/)
     .filter(
-      (word) =>
-        /\p{Lu}{2,}/u.test(
-          word,
-        ) &&
-        word ===
-          word.toUpperCase(),
+      (word) => /\p{Lu}{2,}/u.test(word) && word === word.toUpperCase(),
     );
 
-  if (
-    uppercase.length >
-    MAX_UPPERCASE_WORDS
-  ) {
+  if (uppercase.length > MAX_UPPERCASE_WORDS) {
     problems.push(
       `${label} "${text}" — WERSALIKI najwyżej dla ${MAX_UPPERCASE_WORDS} słów`,
     );
   }
 
   getNumbers(text)
-    .filter(
-      (number) =>
-        !allowedNumbers.has(
-          number,
-        ),
-    )
+    .filter((number) => !allowedNumbers.has(number))
     .forEach((number) => {
       problems.push(
         `${label} "${text}" ma liczbę ${number}, której nie ma w faktach ani w opisie scen — nie zgaduj liczb`,
@@ -1054,111 +787,65 @@ const checkScreenText = (
 };
 
 /*
- * Lista problemów propozycji — pusta znaczy, że wszystko gra.
+ * Lista problemów jednej wersji — pusta znaczy, że wszystko gra.
  */
-const findProblems = ({
-  hook,
-  spans,
-  cover,
-  description,
-  sceneSeconds,
-  history,
-  allowedNumbers,
-}) => {
+const findProblems = (variant, { sceneSeconds, history, allowedNumbers }) => {
   const problems = [];
 
-  const hookWords =
-    countWords(hook);
+  const { hook, spans, cover, description } = variant;
 
-  if (
-    hookWords <
-      HOOK_WORDS[0] ||
-    hookWords > HOOK_WORDS[1]
-  ) {
+  const hookWords = countWords(hook);
+
+  if (hookWords < HOOK_WORDS[0] || hookWords > HOOK_WORDS[1]) {
     problems.push(
       `hook "${hook}" ma ${hookWords} słów — ma mieć ${HOOK_WORDS[0]}-${HOOK_WORDS[1]}`,
     );
   }
 
-  if (
-    hook.length >
-    HOOK_MAX_CHARS
-  ) {
+  if (hook.length > HOOK_MAX_CHARS) {
     problems.push(
       `hook "${hook}" ma ${hook.length} znaków — maks. ${HOOK_MAX_CHARS} (dwie linie)`,
     );
   }
 
-  problems.push(
-    ...checkScreenText(
-      hook,
-      "hook",
-      allowedNumbers,
-    ),
-  );
+  problems.push(...checkScreenText(hook, "hook", allowedNumbers));
 
-  const previousHook =
-    history.find((old) =>
-      isParaphrase(
-        hook,
-        old,
-      ),
-    );
+  const repeated = history
+    .slice(0, HOOK_HISTORY_CHECK)
+    .find((old) => normalizeForCompare(old) === normalizeForCompare(hook));
 
-  if (previousHook) {
+  if (repeated) {
     problems.push(
-      `hook "${hook}" to parafraza "${previousHook}" z poprzedniej rolki`,
+      `hook "${hook}" był już w jednej z ostatnich rolek — napisz inny`,
     );
   }
 
-  if (
-    spans.length <
-    MESSAGES_RANGE[0]
-  ) {
+  if (spans.length < MESSAGES_RANGE[0]) {
     problems.push(
       `potrzebne są co najmniej ${MESSAGES_RANGE[0]} plansze po hooku, jest ${spans.length}`,
     );
   }
 
   spans.forEach((span) => {
-    const words = countWords(
-      span.text,
-    );
+    const words = countWords(span.text);
 
-    if (
-      words >
-      MESSAGE_MAX_WORDS
-    ) {
+    if (words > MESSAGE_MAX_WORDS) {
       problems.push(
         `plansza "${span.text}" ma ${words} słów — maks. ${MESSAGE_MAX_WORDS}`,
       );
     }
 
-    if (
-      span.text.length >
-      MESSAGE_MAX_CHARS
-    ) {
+    if (span.text.length > MESSAGE_MAX_CHARS) {
       problems.push(
         `plansza "${span.text}" ma ${span.text.length} znaków — maks. ${MESSAGE_MAX_CHARS} (dwie linie)`,
       );
     }
 
-    const seconds =
-      sceneSeconds
-        .slice(
-          span.from - 1,
-          span.to,
-        )
-        .reduce(
-          (total, value) =>
-            total + value,
-          0,
-        );
+    const seconds = sceneSeconds
+      .slice(span.from - 1, span.to)
+      .reduce((total, value) => total + value, 0);
 
-    const needed = Math.max(
-      1.5,
-      0.3 * words + 0.5,
-    );
+    const needed = Math.max(1.5, 0.3 * words + 0.5);
 
     if (seconds < needed) {
       problems.push(
@@ -1166,69 +853,25 @@ const findProblems = ({
       );
     }
 
-    problems.push(
-      ...checkScreenText(
-        span.text,
-        "plansza",
-        allowedNumbers,
-      ),
-    );
+    problems.push(...checkScreenText(span.text, "plansza", allowedNumbers));
   });
 
-  const screenTexts = [
-    hook,
-    ...spans.map(
-      (span) => span.text,
-    ),
-  ];
+  const texts = [hook, ...spans.map((span) => span.text)].map(
+    normalizeForCompare,
+  );
 
-  for (
-    let first = 0;
-    first < screenTexts.length;
-    first += 1
-  ) {
-    for (
-      let second = first + 1;
-      second <
-      screenTexts.length;
-      second += 1
-    ) {
-      const shared = [
-        ...getStems(
-          screenTexts[first],
-        ),
-      ].filter((stem) =>
-        getStems(
-          screenTexts[second],
-        ).has(stem),
-      );
-
-      if (shared.length > 0) {
-        problems.push(
-          `"${screenTexts[first]}" i "${screenTexts[second]}" powtarzają to samo słowo — każda plansza ma wnosić nową informację`,
-        );
-      }
-    }
+  if (new Set(texts).size < texts.length) {
+    problems.push("dwie plansze mają ten sam tekst — każda ma wnosić coś nowego");
   }
 
   let gap = 0;
 
-  for (
-    let scene = 2;
-    scene <=
-    sceneSeconds.length;
-    scene += 1
-  ) {
-    const covered =
-      spans.some(
-        (span) =>
-          scene >= span.from &&
-          scene <= span.to,
-      );
+  for (let scene = 2; scene <= sceneSeconds.length; scene += 1) {
+    const covered = spans.some(
+      (span) => scene >= span.from && scene <= span.to,
+    );
 
-    gap = covered
-      ? 0
-      : gap + 1;
+    gap = covered ? 0 : gap + 1;
 
     if (gap === 2) {
       problems.push(
@@ -1237,430 +880,305 @@ const findProblems = ({
     }
   }
 
-  if (
-    countWords(cover) >
-      COVER_MAX_WORDS ||
-    !cover
-  ) {
-    problems.push(
-      `okładka "${cover}" — ma mieć 1-${COVER_MAX_WORDS} słowa`,
-    );
+  if (!cover || countWords(cover) > COVER_MAX_WORDS) {
+    problems.push(`okładka "${cover}" — ma mieć 1-${COVER_MAX_WORDS} słowa`);
   }
 
-  problems.push(
-    ...checkScreenText(
-      cover,
-      "okładka",
-      allowedNumbers,
-    ),
-  );
+  problems.push(...checkScreenText(cover, "okładka", allowedNumbers));
 
-  const firstLine =
-    description.firstLine;
+  const { firstLine, body, hashtags } = description;
 
-  if (
-    !firstLine ||
-    firstLine.length >
-      FIRST_LINE_MAX_CHARS
-  ) {
+  if (!firstLine || firstLine.length > FIRST_LINE_MAX_CHARS) {
     problems.push(
       `pierwsza linia opisu ma ${firstLine.length} znaków — maks. ${FIRST_LINE_MAX_CHARS}`,
     );
   }
 
-  const descriptionText = [
-    firstLine,
-    description.body,
-  ].join("\n\n");
+  if (normalizeForCompare(firstLine) === normalizeForCompare(hook)) {
+    problems.push("pierwsza linia opisu powtarza hook — ma być drugim hookiem");
+  }
 
-  if (
-    /\[|uzupe/i.test(
-      descriptionText,
-    )
-  ) {
+  const descriptionText = `${firstLine}\n\n${body}`;
+
+  if (/\[|uzupe/i.test(descriptionText)) {
     problems.push(
       "opis zawiera placeholder — braki wpisz do missing, nie do opisu",
     );
   }
 
-  const forbidden =
-    FORBIDDEN_PATTERNS.find(
-      (pattern) =>
-        descriptionText
-          .toLowerCase()
-          .includes(pattern),
-    );
+  const forbidden = FORBIDDEN_PATTERNS.find((pattern) =>
+    descriptionText.toLowerCase().includes(pattern),
+  );
 
   if (forbidden) {
-    problems.push(
-      `opis zawiera zakazany wzorzec z briefu ("${forbidden}")`,
-    );
+    problems.push(`opis zawiera zakazany wzorzec z briefu ("${forbidden}")`);
+  }
+
+  if (
+    (descriptionText.match(/\p{Extended_Pictographic}/gu) ?? []).length >
+    DESCRIPTION_MAX_EMOJI
+  ) {
+    problems.push(`opis ma więcej niż ${DESCRIPTION_MAX_EMOJI} emoji`);
   }
 
   getNumbers(descriptionText)
-    .filter(
-      (number) =>
-        !allowedNumbers.has(
-          number,
-        ),
-    )
+    .filter((number) => !allowedNumbers.has(number))
     .forEach((number) => {
       problems.push(
         `opis ma liczbę ${number}, której nie ma w faktach ani w opisie scen`,
       );
     });
 
-  const ctaLength =
-    `Darmowa wycena: ${END_CARD.phone} lub ${END_CARD.web}`
-      .length;
-
-  const descriptionLength =
-    descriptionText.length +
-    ctaLength;
-
   if (
-    descriptionLength <
-      DESCRIPTION_CHARS[0] ||
-    descriptionLength >
-      DESCRIPTION_CHARS[1]
+    descriptionText.length < DESCRIPTION_CHARS[0] ||
+    descriptionText.length > DESCRIPTION_CHARS[1]
   ) {
     problems.push(
-      `opis z CTA ma ${descriptionLength} znaków — ma mieć ok. 300-600`,
+      `opis bez CTA ma ${descriptionText.length} znaków — ma mieć ok. ${DESCRIPTION_CHARS[0]}-${DESCRIPTION_CHARS[1]}`,
     );
   }
 
-  const hashtags =
-    description.hashtags.length;
-
   if (
-    hashtags <
-      HASHTAGS_RANGE[0] ||
-    hashtags >
-      HASHTAGS_RANGE[1]
+    hashtags.length < HASHTAGS_RANGE[0] ||
+    hashtags.length > HASHTAGS_RANGE[1]
   ) {
     problems.push(
-      `hasztagów jest ${hashtags} — ma być ${HASHTAGS_RANGE[0]}-${HASHTAGS_RANGE[1]} tematycznych (bez exbram)`,
+      `hasztagów jest ${hashtags.length} — ma być ${HASHTAGS_RANGE[0]}-${HASHTAGS_RANGE[1]} tematyczne (bez exbram)`,
     );
   }
 
-  return [
-    ...new Set(problems),
-  ];
+  return [...new Set(problems)];
 };
 
-const main = async () => {
-  if (
-    !process.env.OPENAI_API_KEY
-  ) {
-    throw new Error(
-      "Brak OPENAI_API_KEY.",
+/*
+ * Wersja zapisana w planie: odcinki plansz razem z tekstami, żeby
+ * panel mógł później przełączyć rolkę na inną wersję bez AI.
+ */
+const toStoredVariant = (variant, problems) => ({
+  angle: variant.angle,
+  hook: fitText(variant.hook, HARD_MAX_CHARS),
+  hookHighlight: cleanHighlight(
+    variant.hookHighlight,
+    fitText(variant.hook, HARD_MAX_CHARS),
+  ),
+  spans: variant.spans.map((span) => {
+    const text = fitText(span.text, HARD_MAX_CHARS);
+
+    return {
+      from: span.from,
+      to: span.to,
+      text,
+      highlight: cleanHighlight(span.highlight, text),
+    };
+  }),
+  cover: variant.cover,
+  description: variant.description,
+  missing: variant.missing,
+  problems,
+});
+
+/*
+ * Nakłada wersję na plan: hook, napisy scen (ta sama plansza na
+ * scenach z jej odcinka), okładka, opis. Ta sama logika jest
+ * w panelu (panel/server.mjs) przy zmianie wersji.
+ */
+const applyVariant = (editPlan, variant, index) => ({
+  ...editPlan,
+  hook: variant.hook,
+  hookHighlight: variant.hookHighlight,
+  cover: variant.cover,
+  scenes: editPlan.scenes.map((scene, sceneIndex) => {
+    const span = variant.spans.find(
+      (item) => sceneIndex + 1 >= item.from && sceneIndex + 1 <= item.to,
     );
+
+    return {
+      ...scene,
+      caption: span?.text ?? "",
+      captionHighlight: span?.highlight ?? "",
+    };
+  }),
+  copy: {
+    ...editPlan.copy,
+    chosen: index,
+    description: variant.description,
+    missing: variant.missing,
+    problems: variant.problems,
+  },
+});
+
+const main = async () => {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("Brak OPENAI_API_KEY.");
   }
 
-  const editPlan = readJson(
-    EDIT_FILE,
-    null,
-  );
+  const editPlan = readJson(EDIT_FILE, null);
 
   if (
     !editPlan ||
-    !Array.isArray(
-      editPlan.scenes,
-    ) ||
+    !Array.isArray(editPlan.scenes) ||
     editPlan.scenes.length === 0
   ) {
-    throw new Error(
-      "Brak planu montażu w edit.json.",
-    );
+    throw new Error("Brak planu montażu w edit.json.");
   }
 
   const brief = readBrief();
 
-  const scenes =
-    editPlan.scenes;
+  const sceneList = describeScenes(editPlan.scenes);
 
-  const sceneList =
-    describeScenes(scenes);
-
-  const sceneSeconds =
-    scenes.map((scene) =>
-      Number(scene.duration),
-    );
+  const sceneSeconds = editPlan.scenes.map((scene) => Number(scene.duration));
 
   /*
    * Liczby, które wolno pokazać: z faktów briefu i z opisów scen.
    */
-  const allowedNumbers =
-    new Set(
-      getNumbers(
-        [
-          getFactsSection(
-            brief,
-          ),
-          ...sceneList.map(
-            (item) => item.shows,
-          ),
-        ].join("\n"),
-      ),
-    );
+  const allowedNumbers = new Set(
+    getNumbers(
+      [getFactsSection(brief), editPlan.story ?? "", ...sceneList.map((item) => item.shows)].join("\n"),
+    ),
+  );
 
-  const history =
-    readTextHistory();
+  const history = readTextHistory();
+
+  const previews = buildScenePreviews(editPlan);
+
+  console.log(
+    `Copywriter (${COPY_MODEL}) ogląda ${previews.filter((item) => item.type === "input_image").length} ujęć...`,
+  );
+
+  const context = { sceneSeconds, history, allowedNumbers };
 
   let best = null;
 
   let feedback = "";
 
-  for (
-    let attempt = 1;
-    attempt <= MAX_ATTEMPTS;
-    attempt += 1
-  ) {
-    const raw =
-      await requestCopy(
-        buildPrompt({
-          brief,
-          sceneList,
-          history,
-          feedback,
-        }),
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    const raw = await requestCopy([
+      {
+        type: "input_text",
+        text: buildPrompt({ brief, editPlan, sceneList, history, feedback }),
+      },
+      ...previews,
+    ]);
+
+    const variants = (raw.variants ?? [])
+      .slice(0, VARIANT_COUNT)
+      .map((item) => normalizeVariant(item, editPlan.scenes.length))
+      .map((variant) => ({
+        variant,
+        problems: findProblems(variant, context),
+      }));
+
+    console.log(`\nPróba ${attempt} — typ ${raw.type}`);
+
+    variants.forEach(({ variant, problems }, index) => {
+      console.log(`\n  Wersja ${index + 1} [${variant.angle}]`);
+      console.log(
+        `    hook: "${variant.hook}"${variant.hookHighlight ? ` [${variant.hookHighlight}]` : ""}`,
       );
 
-    const hook = cleanText(
-      raw.hook,
-    );
-
-    const proposal = {
-      type: cleanText(
-        raw.type,
-      ),
-      angle: cleanText(
-        raw.angle,
-      ),
-      hookVariants: (
-        raw.hookVariants ?? []
-      ).map(cleanText),
-      hook,
-      hookHighlight:
-        cleanHighlight(
-          raw.hookHighlight,
-          hook,
-        ),
-      spans: normalizeSpans(
-        raw.messages ?? [],
-        scenes.length,
-      ),
-      cover: cleanText(
-        raw.cover,
-      ),
-      description: {
-        firstLine: cleanText(
-          raw.description
-            ?.firstLine,
-        ),
-        body: String(
-          raw.description
-            ?.body ?? "",
-        ).trim(),
-        hashtags: (
-          raw.description
-            ?.hashtags ?? []
-        )
-          .map((tag) =>
-            String(tag)
-              .replace(/^#+/, "")
-              .replace(/\s+/g, "")
-              .trim(),
-          )
-          .filter(Boolean),
-      },
-      missing: (
-        raw.missing ?? []
-      )
-        .map(cleanText)
-        .filter(Boolean),
-    };
-
-    const problems =
-      findProblems({
-        ...proposal,
-        sceneSeconds,
-        history,
-        allowedNumbers,
-      });
-
-    console.log(
-      `\nPróba ${attempt} (${COPY_MODEL}) — typ ${proposal.type}: ${proposal.angle}`,
-    );
-
-    console.log(
-      `  hook: "${proposal.hook}"` +
-        (proposal.hookHighlight
-          ? ` [${proposal.hookHighlight}]`
-          : ""),
-    );
-
-    proposal.spans.forEach(
-      (span) =>
+      variant.spans.forEach((span) =>
         console.log(
-          `  sceny ${span.from}-${span.to}: "${span.text}"` +
-            (span.highlight
-              ? ` [${span.highlight}]`
-              : ""),
+          `    sceny ${span.from}-${span.to}: "${span.text}"${span.highlight ? ` [${span.highlight}]` : ""}`,
         ),
-    );
+      );
 
-    console.log(
-      `  okładka: "${proposal.cover}"`,
-    );
+      console.log(`    okładka: "${variant.cover}"`);
 
-    problems.forEach(
-      (problem) =>
-        console.log(
-          `  ! ${problem}`,
-        ),
-    );
+      problems.forEach((problem) => console.log(`    ! ${problem}`));
+    });
 
-    if (
-      !best ||
-      problems.length <
-        best.problems.length
-    ) {
-      best = {
-        proposal,
-        problems,
-      };
+    /*
+     * Wynik próby: ile wersji jest czystych i ile uwag ma najlepsza.
+     * Kończymy, gdy co najmniej dwie wersje są bez uwag.
+     */
+    const clean = variants.filter((item) => item.problems.length === 0).length;
+
+    const score = clean * 100 - Math.min(...variants.map((item) => item.problems.length), 99);
+
+    if (variants.length > 0 && (!best || score > best.score)) {
+      best = { raw, variants, score };
     }
 
-    if (
-      problems.length === 0
-    ) {
+    if (clean >= Math.min(2, variants.length) && variants.length > 0) {
       break;
     }
 
-    feedback = problems
-      .map(
-        (problem) =>
-          `- ${problem}`,
+    feedback = variants
+      .map(({ problems }, index) =>
+        problems.length
+          ? `Wersja ${index + 1}:\n${problems.map((problem) => `- ${problem}`).join("\n")}`
+          : `Wersja ${index + 1}: bez uwag — możesz ją zostawić.`,
       )
-      .join("\n");
+      .join("\n\n");
   }
 
-  if (
-    best.problems.length > 0
-  ) {
-    console.warn(
-      `\nUWAGA: napisy mają ${best.problems.length} uwag po ${MAX_ATTEMPTS} próbach — biorę najlepszą wersję.`,
-    );
+  if (!best) {
+    throw new Error("AI nie zwróciło żadnej wersji napisów.");
   }
-
-  const chosen =
-    best.proposal;
 
   /*
-   * Na wypadek, gdy najlepsza wersja wciąż ma za długie teksty —
-   * żeby nie wyszły poza kadr.
+   * Do rolki idzie pierwsza wersja bez uwag (model ustawia najlepszą
+   * na początku), a gdy takiej nie ma — ta z najmniejszą liczbą uwag.
    */
-  const hook = fitText(
-    chosen.hook,
-    HOOK_MAX_CHARS,
+  const stored = best.variants.map(({ variant, problems }) =>
+    toStoredVariant(variant, problems),
   );
 
-  const updatedScenes =
-    scenes.map(
-      (scene, index) => {
-        const sceneNumber =
-          index + 1;
+  const cleanIndex = stored.findIndex((item) => item.problems.length === 0);
 
-        const span =
-          chosen.spans.find(
-            (item) =>
-              sceneNumber >=
-                item.from &&
-              sceneNumber <=
-                item.to,
-          );
+  const chosen =
+    cleanIndex !== -1
+      ? cleanIndex
+      : stored.reduce(
+          (bestIndex, item, index) =>
+            item.problems.length < stored[bestIndex].problems.length
+              ? index
+              : bestIndex,
+          0,
+        );
 
-        const caption = span
-          ? fitText(
-              span.text,
-              MESSAGE_MAX_CHARS,
-            )
-          : "";
-
-        return {
-          ...scene,
-          caption,
-          captionHighlight:
-            span
-              ? cleanHighlight(
-                  span.highlight,
-                  caption,
-                )
-              : "",
-        };
-      },
+  if (stored[chosen].problems.length > 0) {
+    console.warn(
+      `\nUWAGA: żadna wersja nie jest bez uwag po ${MAX_ATTEMPTS} próbach — biorę wersję ${chosen + 1}.`,
     );
+  }
+
+  const planWithCopy = applyVariant(
+    {
+      ...editPlan,
+      copy: {
+        model: COPY_MODEL,
+        type: cleanText(best.raw.type),
+        analysis: best.raw.analysis,
+        variants: stored,
+      },
+    },
+    stored[chosen],
+    chosen,
+  );
 
   fs.writeFileSync(
     EDIT_FILE,
-    `${JSON.stringify(
-      {
-        ...editPlan,
-        hook,
-        hookHighlight:
-          cleanHighlight(
-            chosen.hookHighlight,
-            hook,
-          ),
-        cover: chosen.cover,
-        scenes:
-          updatedScenes,
-        copy: {
-          model: COPY_MODEL,
-          type: chosen.type,
-          angle: chosen.angle,
-          hookVariants:
-            chosen.hookVariants,
-          description:
-            chosen.description,
-          missing:
-            chosen.missing,
-          problems:
-            best.problems,
-        },
-      },
-      null,
-      2,
-    )}\n`,
+    `${JSON.stringify(planWithCopy, null, 2)}\n`,
     "utf8",
   );
 
   rememberTexts([
-    hook,
-    ...chosen.spans.map(
-      (span) => span.text,
-    ),
+    stored[chosen].hook,
+    ...stored[chosen].spans.map((span) => span.text),
   ]);
 
-  if (
-    chosen.missing.length > 0
-  ) {
-    console.log(
-      "\nDo uzupełnienia w opisie:",
-    );
+  console.log(
+    `\nDo rolki: wersja ${chosen + 1} [${stored[chosen].angle}]. Pozostałe wersje można wybrać w panelu (zakładka Napisy i opis).`,
+  );
 
-    chosen.missing.forEach(
-      (item) =>
-        console.log(
-          `- ${item}`,
-        ),
-    );
+  if (stored[chosen].missing.length > 0) {
+    console.log("\nDo uzupełnienia w opisie:");
+
+    stored[chosen].missing.forEach((item) => console.log(`- ${item}`));
   }
 
-  console.log(
-    `\nZapisano napisy w ${EDIT_FILE}`,
-  );
+  console.log(`\nZapisano napisy w ${EDIT_FILE}`);
 };
 
 main().catch((error) => {
@@ -1672,23 +1190,10 @@ main().catch((error) => {
     `\nUWAGA: nie udało się napisać napisów (${error.message}) — rolka powstanie bez nich.`,
   );
 
-  const editPlan = readJson(
-    EDIT_FILE,
-    null,
-  );
+  const editPlan = readJson(EDIT_FILE, null);
 
-  if (
-    editPlan &&
-    Array.isArray(
-      editPlan.scenes,
-    )
-  ) {
-    const {
-      copy,
-      cover,
-      hookHighlight,
-      ...rest
-    } = editPlan;
+  if (editPlan && Array.isArray(editPlan.scenes)) {
+    const { copy, cover, hookHighlight, ...rest } = editPlan;
 
     fs.writeFileSync(
       EDIT_FILE,
@@ -1696,15 +1201,11 @@ main().catch((error) => {
         {
           ...rest,
           hook: "",
-          scenes:
-            editPlan.scenes.map(
-              (scene) => ({
-                ...scene,
-                caption: "",
-                captionHighlight:
-                  "",
-              }),
-            ),
+          scenes: editPlan.scenes.map((scene) => ({
+            ...scene,
+            caption: "",
+            captionHighlight: "",
+          })),
         },
         null,
         2,

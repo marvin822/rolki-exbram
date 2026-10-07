@@ -41,6 +41,8 @@ przez plik tymczasowy, tylko zdjęcia i filmy), uruchamia `make-reel.mjs`
 dokładnie jak `.bat` i przesyła kroki oraz log na żywo (Server-Sent Events).
 Jednocześnie działa jedno zadanie — kroki dzielą pliki stanu w korzeniu.
 
+Zakładka „Napisy i opis” pokazuje 3 wersje napisów od copywritera — „Użyj
+i renderuj” przełącza rolkę na wybraną wersję (render bez AI, ok. minuty).
 Edytor napisów zmienia w `work/<zestaw>/edit.json` WYŁĄCZNIE teksty (hook,
 plansze, wyróżnienia, okładka, opis) — kolejność scen, pliki i czasy zostają
 z planu. Potem `--tylko-render`.
@@ -129,8 +131,8 @@ udało, a kod wyjścia jest niezerowy, gdy cokolwiek padło.
 | 1 | `extract-video-frames.mjs` | 20 klatek przeglądowych na film → `video-frames/` |
 | 2 | `analyze-video.mjs` | klatki → `video-analysis.json` (ocena całego filmu) |
 | 3 | `analyze-video-detail.mjs` | do 4 kandydatów → 12 klatek szczegółowych każdy → precyzyjne fragmenty w `video-analysis.json` |
-| 4 | `analyze-image.mjs` | zdjęcia → `analysis.json`; zdjęcia + fragmenty → `edit.json` (plan montażu) |
-| 4a | `write-copy.mjs` | gotowy plan + opisy scen → hook i hasła na ekran w `edit.json` |
+| 4 | `analyze-image.mjs` | zdjęcia → `analysis.json`; planer (`gpt-5`, **ogląda podglądy**) układa historię i dobiera ujęcia → `edit.json` (sceny z rolą i opisem) |
+| 4a | `write-copy.mjs` | plan + **podglądy scen** + brief → 3 wersje napisów, okładki i opisu; pierwsza poprawna trafia do rolki |
 | 5 | `normalize-videos.mjs` | filmy → `public/processed/*.mp4` (stabilizacja + skala + 30 fps, bez dźwięku) |
 | 5a | `measure-grade.mjs` | pomiar jasności i nasycenia każdej sceny → `grade.json` (korekta kolorów per scena) |
 | 6 | `select-music.mjs` | `public/music/` → `music.json` (utwór + wykryte tempo i pierwsze uderzenie) |
@@ -209,39 +211,45 @@ droga i niebo liczą się jako `deadSpace`, nawet gdy ładnie wyglądają.
   Kod zdejmuje sceny ponad 21 s materiału (od przedostatniej), bo dociąganie
   cięć do rytmu dokłada kilka klatek.
 - 3–7 scen; zdjęcia 3–4 s (mocne do 4,5 s), fragmenty wideo 4–5 s.
-- Ranking **względny w obrębie zestawu** — otwarcie i zakończenie to ujęcia
-  frontalne o najwyższym `productProminence`, nigdy `wide` ani najsłabsze
-  z zestawu. Progi bezwzględne nie działają, bo przy ogrodzeniu na murku
-  `deadSpace` jest wysoki dla wszystkich ujęć.
+- **Najpierw historia, potem ujęcia.** Planer (`gpt-5`) dostaje podglądy
+  WSZYSTKICH materiałów (`media-preview.mjs`: zdjęcia 512 px z obrotem
+  z EXIF, z filmu — klatka ze środka fragmentu) i układa rolkę jak historię
+  z sekcji 14 briefu. Każda scena ma rolę: `hook` (najmocniejsze ujęcie),
+  `dom` (ogrodzenie razem z domem — obowiązkowe, gdy takie ujęcie jest),
+  `korzysc`, `detal`, `final`, oraz opis `shows` po polsku z punktu
+  widzenia klienta (styl domu, gęstość lameli…). Do tego `story` (atut
+  realizacji) i `contextFile` — zdjęcie całej realizacji z domem.
+  Wcześniej planer otwierał ujęciem „najwięcej metalu w kadrze”, więc domu
+  w rolce prawie nie było, a brief sprzedaje efekt dla domu.
 - Fragmenty wideo: planer dostaje tylko **2 najlepiej ocenione** z każdego filmu
   i wyłącznie te z `qualityScore ≥ 0.8`.
-- Gdy większość zdjęć ma niski `productProminence`, a są dobre klipy — rolka
-  opiera się na wideo.
 - **Napisy, okładkę i opis** pisze osobny krok `write-copy.mjs` („copywriter”,
-  model `gpt-5`), PO ułożeniu montażu. Jego instrukcją jest **brief właściciela
+  `gpt-5`), PO ułożeniu montażu, i **ogląda** podglądy scen oraz ujęcie całej
+  realizacji z domem. Jedyną instrukcją treści jest **brief właściciela
   [exbram-rolki-instrukcje-agenta.md](exbram-rolki-instrukcje-agenta.md)**,
-  wczytywany przy każdym przebiegu — zmiana briefu (fakty o firmie, ton,
-  zakazane wzorce) działa od następnej rolki bez zmian w kodzie. Kod dokłada
-  zasady pipeline'u, które mają pierwszeństwo: rolka jest już zmontowana,
-  jedynym CTA jest plansza końcowa (ostatni napis nie jest CTA), na ekranie
-  nigdy `[UZUPEŁNIJ]` ani emoji, wynik w JSON.
-- Copywriter wybiera **typ materiału i kąt** (A–H z briefu), pisze hook
-  (scena 1, 3–7 słów) i 2–5 plansz po ≤ 8 słów, każdą na 1–3 kolejne sceny,
-  z jednym słowem kluczowym do wyróżnienia kolorem akcentu. Do tego tekst
-  okładki (≤ 4 słowa), opis i listę brakujących danych (RAL, wymiary…).
-- **Kontrola w kodzie, nie tylko w prompcie:** liczba słów i znaków, czas
-  czytania (0,3 s na słowo + 0,5 s, min. 1,5 s), zakazane wzorce z sekcji 6
-  briefu, puste słowa, fałszywe obietnice (cisza, hałas, wiatr — lamele są
-  ażurowe), pytanie bez „?”, wersaliki, placeholdery i emoji na ekranie,
-  **liczby spoza faktów** (sekcja 2 briefu) i opisów scen, powtórzone słowo
-  między planszami (nazwy produktów wolno powtarzać — to słowa, których
-  szuka klient), parafraza hooka z historii, długość opisu i liczba
-  hasztagów. Przy uwagach propozycja wraca do modelu z ich listą — najwyżej
-  3 próby, potem bierze najlepszą. Błąd kroku nie zatrzymuje rolki: powstaje
-  bez napisów, a opis pisze zapasowa ścieżka `generate-description.mjs`.
-- **Pamięć hooków i haseł:** ostatnie 24 w `work/text-history.json` (lokalnie,
-  wspólne dla zestawów) trafiają do promptu — hooka nie wolno powtórzyć ani
-  sparafrazować. Usunięcie pliku czyści pamięć.
+  wczytywany przy każdym przebiegu. Kod dokłada tylko to, czego brief nie
+  wie: rolka jest zmontowana, plansze zmieniają się z cięciem, po ostatniej
+  scenie wchodzi plansza z telefonem i stroną (więc ostatnia plansza może być
+  miękkim CTA, ale bez kontaktu), na ekranie nie ma `[UZUPEŁNIJ]` ani emoji,
+  wynik w JSON zamiast formatu z sekcji 34.
+- Copywriter pisze **3 wersje** pod różnymi kątami (sekcja 8 briefu), najlepszą
+  pierwszą. Każda: hook (scena 1), 2–5 plansz po 1–3 scenach z wyróżnieniem,
+  okładka, opis, braki. Do rolki idzie pierwsza wersja bez uwag kontroli;
+  pozostałe są w `edit.json` (`copy.variants`) i w panelu — zmiana wersji
+  to render bez AI.
+- **Kontrola w kodzie:** liczba słów i znaków (plansza ≤ 56 znaków — dwie
+  linie), czas czytania (0,3 s/słowo + 0,5 s, min. 1,5 s), zakazane wzorce
+  z sekcji 12, 21 i 32 briefu, fałszywe obietnice (cisza, hałas, wiatr —
+  lamele są ażurowe), pytanie bez „?”, sztuczne trójki, wersaliki,
+  placeholdery, emoji i kontakt na planszach, **liczby spoza faktów**
+  (sekcja „Fakty o EXBRAM”) i opisów scen, powtórzony hook. Przy uwagach
+  wersje wracają do modelu z ich listą — najwyżej 3 próby. Tekst nie jest
+  ucinany tuż za limitem (urywało zdania); twardy sufit to 80 znaków.
+  Strzałki (→) zamieniane na półpauzę — Montserrat ich nie ma.
+- **Pamięć hooków:** `work/text-history.json` (lokalnie, wspólne dla zestawów).
+  Blokowany jest tylko hook IDENTYCZNY z jednym z 12 ostatnich — szersza
+  blokada (parafrazy, tematy) odcinała dobre hooki z briefu i pchała model
+  w udziwnienia. Usunięcie pliku czyści pamięć.
 - **Serie zdjęć:** zdjęcia zrobione w odstępie ≤ 4 s (`takenAt`) to prawie ten
   sam kadr. Kod nie pozwala postawić ich obok siebie — przenosi drugie dalej
   (bez ruszania zakończenia), a gdy się nie da, pomija je.
@@ -330,18 +338,19 @@ Rzeczy, które łatwo zepsuć ponownie:
 
 ## 11. Środowisko
 
-- Windows, Node.js 24, NVIDIA (NVENC), FFmpeg z `libvidstab`
-- Remotion 4 + React/TypeScript, OpenAI `gpt-5-mini`
+- Windows, Node.js 24, FFmpeg z `libvidstab` (gyan.dev „full”)
+- Enkoder filmów: karta NVIDIA (`h264_nvenc`), a bez niej procesor (`libx264`) —
+  wybór automatyczny przez próbne kodowanie; `REEL_ENCODER=cpu|nvenc` wymusza
+- Remotion 4 + React/TypeScript; OpenAI: `gpt-5` (planer, copywriter),
+  `gpt-5-mini` (analiza kadrów, filmów, zapasowy opis)
 - Ścieżki są względne (`process.cwd()`) — projekt nie jest przywiązany do dysku
 
 ## 12. Otwarte
 
-- **Wdrożenie na NAS** (Xpenology, Intel N97): enkoder jest na sztywno
-  `h264_nvenc` — przed przeniesieniem trzeba go wynieść do zmiennej
-  środowiskowej z `libx264` jako wariantem. Uwaga: DSM 7 stoi na kernelu 4.4,
+- **Wdrożenie na NAS** (Xpenology, Intel N97): enkoder sam przełączy się na
+  `libx264`, gdy nie ma karty NVIDIA. Uwaga: DSM 7 stoi na kernelu 4.4,
   więc QuickSync na Alder Lake-N nie zadziała. Wąskim gardłem i tak jest render
   Remotion, który liczy się na CPU.
-- Kilka wariantów jednej rolki i wybór najlepszego.
 - Automatyczna publikacja / integracja z n8n.
 - **Cache ma tylko analiza zdjęć.** `analyze-video.mjs` i `analyze-video-detail.mjs`
   analizują filmy od zera przy każdym przebiegu, opis też powstaje na nowo.

@@ -32,6 +32,91 @@ const STABILIZE =
 const SCALE_FILTER =
   "scale=1920:1920:force_original_aspect_ratio=decrease";
 
+/*
+ * Enkoder: karta NVIDIA (h264_nvenc), a gdy jej nie ma — procesor
+ * (libx264). FFmpeg z gyan.dev ma oba, ale NVENC działa tylko
+ * z kartą NVIDIA i jej sterownikiem, więc sprawdzamy to krótkim
+ * próbnym kodowaniem zamiast zakładać.
+ *
+ * REEL_ENCODER=nvenc albo REEL_ENCODER=cpu wymusza wybór.
+ */
+const nvencWorks = () => {
+  const probe = spawnSync(
+    "ffmpeg",
+    [
+      "-v",
+      "error",
+      "-f",
+      "lavfi",
+      "-i",
+      "color=c=black:s=320x240:d=0.2",
+      "-c:v",
+      "h264_nvenc",
+      "-f",
+      "null",
+      "-",
+    ],
+    {
+      timeout: 30000,
+    },
+  );
+
+  return probe.status === 0;
+};
+
+const pickEncoder = () => {
+  const forced = (
+    process.env.REEL_ENCODER ?? ""
+  ).toLowerCase();
+
+  if (forced === "cpu") {
+    return "cpu";
+  }
+
+  if (forced === "nvenc") {
+    return "nvenc";
+  }
+
+  return nvencWorks()
+    ? "nvenc"
+    : "cpu";
+};
+
+const ENCODER = pickEncoder();
+
+const ENCODER_ARGS =
+  ENCODER === "nvenc"
+    ? [
+        "-c:v",
+        "h264_nvenc",
+        "-preset",
+        "p5",
+        "-b:v",
+        "8M",
+        "-maxrate",
+        "12M",
+        "-bufsize",
+        "16M",
+      ]
+    : [
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "18",
+        "-maxrate",
+        "12M",
+        "-bufsize",
+        "16M",
+      ];
+
+console.log(
+  ENCODER === "nvenc"
+    ? "Enkoder: karta NVIDIA (h264_nvenc)"
+    : "Enkoder: procesor (libx264) — brak karty NVIDIA albo wymuszony REEL_ENCODER=cpu",
+);
+
 if (!fs.existsSync(publicDir)) {
   console.error(
     `Nie znaleziono katalogu: ${publicDir}`,
@@ -138,7 +223,8 @@ for (const file of videoFiles) {
   );
 
   /*
-   * Dekodowanie programowe + enkoder GPU (h264_nvenc).
+   * Dekodowanie programowe + enkoder GPU (h264_nvenc), a bez karty
+   * NVIDIA — enkoder procesora (ENCODER_ARGS wyżej).
    *
    * Wcześniejszy wariant z pełnym potokiem CUDA
    * (-hwaccel cuda + hwdownload/hwupload_cuda) potrafił
@@ -223,20 +309,7 @@ for (const file of videoFiles) {
     "-vf",
     filterGraph,
 
-    "-c:v",
-    "h264_nvenc",
-
-    "-preset",
-    "p5",
-
-    "-b:v",
-    "8M",
-
-    "-maxrate",
-    "12M",
-
-    "-bufsize",
-    "16M",
+    ...ENCODER_ARGS,
 
     "-r",
     "30",

@@ -53,6 +53,19 @@ output/kowalski-brama/okladka-2026-09-06_23-32-45.jpg
 | `node make-reel.mjs "kowalski-brama"` | ten jeden zestaw |
 | `node make-reel.mjs "kowalski-brama" --tylko-render` | ponowny render z zapisanego planu (np. po poprawce napisów), bez AI |
 
+## Na innym komputerze
+
+1. Programy (PowerShell): `winget install OpenJS.NodeJS`,
+   `winget install Git.Git`, `winget install Gyan.FFmpeg` — potem nowy terminal.
+2. Kod: `git clone https://github.com/marvin822/rolki-exbram.git`
+3. Ręcznie skopiuj (nie ma ich w gicie): `.env` z kluczem OpenAI (bezpiecznie,
+   nie mailem), `public/music/*.mp3`, opcjonalnie `work/text-history.json`.
+4. Dwuklik `panel.bat` — pierwsze uruchomienie samo zrobi `npm install`,
+   pierwszy render pobierze przeglądarkę Remotion (~100 MB).
+
+Bez karty NVIDIA filmy przerabia procesor (wolniej, ale działa). Potrzebny
+jest internet (OpenAI, czcionka napisów). Aktualizacje: `git pull`.
+
 ## Dokumentacja
 
 Pełny opis pipeline'u, logiki kadrowania, reguł montażu i wykrytych pułapek:
