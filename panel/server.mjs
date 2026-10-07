@@ -386,10 +386,12 @@ const readPlanForEditor = (setName) => {
       plan.copy?.angle ??
       "",
     story: plan.story ?? "",
+    editor: plan.copy?.editor ?? null,
     chosen: Number.isInteger(plan.copy?.chosen) ? plan.copy.chosen : null,
     editedByHand: Boolean(plan.copy?.editedByHand),
     variants: (plan.copy?.variants ?? []).map((variant) => ({
       angle: variant.angle ?? "",
+      scenario: variant.scenario ?? "",
       hook: variant.hook ?? "",
       hookHighlight: variant.hookHighlight ?? "",
       cover: variant.cover ?? "",

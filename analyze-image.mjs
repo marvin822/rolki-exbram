@@ -730,6 +730,63 @@ const SCENE_ROLES = [
 ];
 
 /*
+ * Profil realizacji — krok 1 napisów (brief, sekcja 2). Opisuje SAMO
+ * ogrodzenie. Wcześniej było tu wolne pole "story" o tym, jak
+ * ogrodzenie wygląda przy domu, i przez nie do napisów trafił dach
+ * („dopasowana do domu z grafitowym dachem”).
+ */
+const PROFILE_FIELDS = {
+  rodzaj:
+    "styl i rodzaj ogrodzenia, np. palisadowe z pionowych profili, żaluzjowe, panelowe 3D, ozdobne z motywem",
+  kolor: "kolor ogrodzenia",
+  charakter: "nowoczesne / klasyczne / pomiędzy",
+  wypelnienie: "pełne / półpełne / ażurowe",
+  brama: "rodzaj bramy (przesuwna, dwuskrzydłowa) albo brak / nie widać",
+  furtka: "jest / brak / nie widać",
+  mur: "podmurówka, murowane słupki, mur — z czego; albo brak / nie widać",
+  kolorMuru: "kolor muru albo brak",
+  charakterMuru: "nowoczesny / klasyczny / brak",
+  wyroznik:
+    "jedno zdanie: co wyróżnia SAMO ogrodzenie (wzór, forma); bez domu i otoczenia",
+};
+
+const PROFILE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: Object.fromEntries(
+    Object.entries(PROFILE_FIELDS).map(([key, description]) => [
+      key,
+      { type: "string", description },
+    ]),
+  ),
+  required: Object.keys(PROFILE_FIELDS),
+};
+
+const cleanProfile = (profile) =>
+  Object.fromEntries(
+    Object.keys(PROFILE_FIELDS).map((key) => [
+      key,
+      String(profile?.[key] ?? "")
+        .trim()
+        .replace(/\.+$/, ""),
+    ]),
+  );
+
+/*
+ * Profil jednym zdaniem — dla panelu i logu.
+ */
+const describeProfile = (profile) =>
+  [
+    `${profile.rodzaj}, ${profile.kolor}, ${profile.charakter}, ${profile.wypelnienie}`,
+    `brama: ${profile.brama}`,
+    `furtka: ${profile.furtka}`,
+    `mur: ${profile.mur}${profile.kolorMuru && profile.kolorMuru !== "brak" ? ` (${profile.kolorMuru}, ${profile.charakterMuru})` : ""}`,
+    profile.wyroznik,
+  ]
+    .filter(Boolean)
+    .join("; ");
+
+/*
  * Podglądy materiału dla planera: każde zdjęcie i środek każdego
  * fragmentu filmu, jako mały obraz z etykietą. Bez podglądu (błąd
  * FFmpeg) materiał zostaje na liście, tylko model zna go z opisu.
@@ -1028,10 +1085,13 @@ ${JSON.stringify(
 
 NAJPIERW HISTORIA, POTEM UJĘCIA:
 
-1. Obejrzyj cały materiał i ustal, co jest atutem tej realizacji z punktu
-   widzenia klienta: jak ogrodzenie wygląda przy domu (styl domu, elewacja),
-   czy zasłania posesję czy jest lekkie i otwarte, co je wyróżnia (wzór,
-   detal, brama, furtka w tym samym stylu). Zapisz to krótko w polu story.
+1. Obejrzyj cały materiał i opisz w polu profile SAMO OGRODZENIE: styl
+   i rodzaj, kolor, czy jest nowoczesne czy klasyczne, czy jest pełne czy
+   ażurowe, czy jest brama i jaka, czy jest furtka, czy jest mur /
+   podmurówka / murowane słupki, jaki mają kolor i czy są nowoczesne.
+   Krótko, rzeczowo, po polsku. Nie opisuj domu, dachu, elewacji ani
+   otoczenia — na tym profilu powstaną napisy, a one mówią o ogrodzeniu.
+   Czego nie widać, wpisz "nie widać"; czego nie ma — "brak".
 
 2. Ułóż rolkę jak krótką historię (każda scena dostaje role):
    - hook — najmocniejsze, najbardziej inspirujące ujęcie na start: ładny
@@ -1048,11 +1108,10 @@ NAJPIERW HISTORIA, POTEM UJĘCIA:
    lepszą historię.
 
 3. Do każdej sceny dopisz shows — jedno zdanie PO POLSKU, co widać
-   z punktu widzenia klienta: dom (styl, elewacja, dach), front posesji,
+   z punktu widzenia klienta: front posesji, dom w tle,
    jak gęste są lamele / ile zasłaniają, brama, furtka, detal. Np.:
-   "Front z bramą przesuwną przed jasnym, nowoczesnym domem z płaskim
-   dachem; poziome lamele w grafitowym kolorze, gęste — mocno zasłaniają
-   podwórko". Copywriter pisze napisy na podstawie tych zdań — pisz tylko
+   "Front z bramą przesuwną przed nowoczesnym domem; poziome lamele
+   w grafitowym kolorze, gęste — mocno zasłaniają podwórko". Pisz tylko
    to, co naprawdę widać.
 
 4. contextFile — nazwa pliku ZDJĘCIA, które najlepiej pokazuje całą
@@ -1230,9 +1289,8 @@ Zwróć wyłącznie JSON zgodny ze schematem.
                 },
               },
 
-              story: {
-                type: "string",
-              },
+              profile:
+                PROFILE_SCHEMA,
 
               contextFile: {
                 type: "string",
@@ -1241,7 +1299,7 @@ Zwróć wyłącznie JSON zgodny ze schematem.
 
             required: [
               "scenes",
-              "story",
+              "profile",
               "contextFile",
             ],
           },
@@ -1531,8 +1589,13 @@ Zwróć wyłącznie JSON zgodny ze schematem.
       ? plan.contextFile
       : "";
 
+  const profile =
+    cleanProfile(
+      plan.profile,
+    );
+
   console.log(
-    `\nHistoria: ${plan.story}`,
+    `\nProfil realizacji: ${describeProfile(profile)}`,
   );
 
   uniqueScenes.forEach(
@@ -1543,9 +1606,12 @@ Zwróć wyłącznie JSON zgodny ze schematem.
   );
 
   return {
-    story: String(
-      plan.story ?? "",
-    ).trim(),
+    profile,
+
+    story:
+      describeProfile(
+        profile,
+      ),
 
     contextFile,
 

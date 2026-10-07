@@ -1,200 +1,237 @@
 {
   "set": "5",
-  "story": "Ciemne, stalowe ogrodzenie EXBRAM z pionowymi lamelami i greckim motywem w pasach, osadzone na słupkach z ciemnej cegły; spójna linia bramy i przęseł dopasowana do domu z grafitowym dachem, ażurowe wypełnienie porządkuje front i nie zamyka widoku.",
-  "contextFile": "ogrodzenie-nowoczesne-5-9.jpg",
+  "profile": {
+    "rodzaj": "Ogrodzenie palisadowe z pionowych profili stalowych z ozdobnym pasem (motyw meandra) u góry i dołu.",
+    "kolor": "grafit/antracyt",
+    "charakter": "pomiędzy (nowoczesna forma z klasycznym motywem)",
+    "wypelnienie": "ażurowe",
+    "brama": "dwuskrzydłowa",
+    "furtka": "jest",
+    "mur": "murowane słupki i murek/podmurówka z ciemnej cegły",
+    "kolorMuru": "ciemny grafit (cegła)",
+    "charakterMuru": "nowoczesny",
+    "wyroznik": "Pionowe lamele z dwoma dekoracyjnymi pasami w motywie greckiego meandra — spójne na całej linii frontu."
+  },
+  "story": "Ogrodzenie palisadowe z pionowych profili stalowych z ozdobnym pasem (motyw meandra) u góry i dołu., grafit/antracyt, pomiędzy (nowoczesna forma z klasycznym motywem), ażurowe; brama: dwuskrzydłowa; furtka: jest; mur: murowane słupki i murek/podmurówka z ciemnej cegły (ciemny grafit (cegła), nowoczesny); Pionowe lamele z dwoma dekoracyjnymi pasami w motywie greckiego meandra — spójne na całej linii frontu.",
+  "contextFile": "ogrodzenie-nowoczesne-5-7.jpg",
   "scenes": [
     {
       "file": "ogrodzenie-nowoczesne-5-7.jpg",
       "fragmentId": "",
-      "duration": 3.8,
+      "duration": 4.2,
       "start": 0,
-      "reason": "Mocny kadr z domem i wjazdem – natychmiast widać dopasowanie ogrodzenia do posesji.",
+      "reason": "Mocny front z domem w kadrze — od razu pokazuje dopasowanie ogrodzenia do architektury.",
       "role": "hook",
-      "shows": "Wjazd z bramą wjazdową i przęsłem przy domu z jasną elewacją i grafitowym, spadzistym dachem; pionowe lamele w ciemnym kolorze i dekoracyjny pas w grecki wzór.",
+      "shows": "Front z bramą dwuskrzydłową i przęsłami; pionowe lamele w grafitowym kolorze, dekoracyjny pas z meandrem, dom w tle.",
       "caption": "",
       "captionHighlight": ""
     },
     {
-      "file": "ogrodzenie-nowoczesne-5-9.jpg",
-      "fragmentId": "",
-      "duration": 3.2,
-      "start": 0,
-      "reason": "Szeroki widok domu z długą linią ogrodzenia – pokazuje, jak całość pracuje z architekturą.",
-      "role": "dom",
-      "shows": "Szeroki front posesji: długa linia ogrodzenia na ciemnych słupkach i dom z grafitowym dachem; ażurowe pionowe lamele nie zasłaniają całkowicie podwórka.",
-      "caption": "Przez przęsła nadal widać posesję",
-      "captionHighlight": "widać posesję"
-    },
-    {
       "file": "ogrodzenie-nowoczesne-5-6.jpg",
       "fragmentId": "",
+      "duration": 3.5,
+      "start": 0,
+      "reason": "Widać bramę i przęsła jako jedną linię — porządek wjazdu i spójność wzoru.",
+      "role": "korzysc",
+      "shows": "Brama dwuskrzydłowa i przęsła w jednym wzorze; spójny front na murowanych słupkach i podmurówce.",
+      "caption": "Pionowe profile dają rytm",
+      "captionHighlight": "rytm"
+    },
+    {
+      "file": "ogrodzenie-nowoczesne-5-5.jpg",
+      "fragmentId": "",
       "duration": 3.2,
       "start": 0,
-      "reason": "Czytelnie widać bramę i przęsła w jednym wzorze – podkreśla spójność i porządek we wjeździe.",
-      "role": "korzysc",
-      "shows": "Brama i przęsła w jednym wzorze między słupkami z ciemnej cegły — uporządkowany, spójny wjazd.",
-      "caption": "Przez przęsła nadal widać posesję",
-      "captionHighlight": "widać posesję"
-    },
-    {
-      "file": "ogrodzenie-nowoczesne-5-8.jpg",
-      "fragmentId": "",
-      "duration": 2.8,
-      "start": 0,
-      "reason": "Zbliżenie na wykonanie – konkret EXBRAM, podkreśla detal i jakość.",
+      "reason": "Zbliżenie wzoru i profili — podkreśla jakość detalu i charakter motywu.",
       "role": "detal",
-      "shows": "Zbliżenie pionowych lameli i dolnego pasa z motywem greckim; widać grubość profili i równą linię wzoru.",
-      "caption": "Grecki wzór nadaje całości wyraz",
-      "captionHighlight": "Grecki wzór"
+      "shows": "Zbliżenie lameli i ozdobnego pasa z motywem meandra; równe odstępy, masywne profile na tle muru.",
+      "caption": "Meander spina całą linię",
+      "captionHighlight": "Meander"
     },
     {
-      "file": "ogrodzenie-nowoczesne-5-4.jpg",
+      "file": "ogrodzenie-nowoczesne-5-9.jpg",
       "fragmentId": "",
-      "duration": 3.4,
+      "duration": 3.5,
       "start": 0,
-      "reason": "Czysty, elegancki kadr jednego przęsła — mocne ujęcie podsumowujące całość przed planszą.",
+      "reason": "Szeroka perspektywa z domem — kontekst i skala ogrodzenia w terenie.",
+      "role": "dom",
+      "shows": "Szeroki kadr frontu z domem; długie przęsła z pionowymi lamelami częściowo zasłaniają podwórko.",
+      "caption": "Ażurowe — lekko, jasno",
+      "captionHighlight": "Ażurowe"
+    },
+    {
+      "file": "ogrodzenie-nowoczesne-5-1.jpg",
+      "fragmentId": "",
+      "duration": 3.8,
+      "start": 0,
+      "reason": "Dynamiczna perspektywa wzdłuż muru — mocne zamknięcie przed planszą.",
       "role": "final",
-      "shows": "Jedno przęsło między grafitowymi słupkami z tłem z tui; pionowe lamele o umiarkowanej gęstości i dekoracyjne pasy u góry i dołu.",
-      "caption": "Zapisz ten pomysł na ogrodzenie",
-      "captionHighlight": ""
+      "shows": "Perspektywa wzdłuż frontu: przęsło między grafitowymi słupkami i murkiem; ozdobne pasy u góry i u dołu.",
+      "caption": "Też chcesz taką palisadę? Skontaktuj się z nami!",
+      "captionHighlight": "Skontaktuj"
     }
   ],
   "copy": {
-    "model": "gpt-6-sol",
-    "type": "A",
-    "analysis": {
-      "atut": "Ażurowe przęsła z greckim motywem nadają frontowi ozdobny wygląd, nie zasłaniając całkowicie posesji.",
-      "potrzeba": "Ogrodzenie, które pasuje do domu, ale nie tworzy wrażenia pełnego muru.",
-      "efekt": "Uporządkowany front z wyrazistym, dekoracyjnym wzorem.",
-      "dlaczego": "Materiał pokazuje pomysł na ogrodzenie, które łączy ozdobny charakter z bardziej otwartym widokiem na posesję."
+    "model": "gpt-5",
+    "editor": {
+      "model": "gpt-5-mini",
+      "chosen": 1,
+      "reason": "Wersja 2 lepiej trzyma się briefu — naturalny hook, napisy mówią o charakterze i wrażeniu w spójną całość i zawierają tylko jedno zaproszenie do kontaktu"
     },
     "variants": [
       {
-        "angle": "inspiracja",
-        "hook": "Ozdobny front bez zamykania widoku?",
-        "hookHighlight": "bez zamykania",
+        "angle": "Nowoczesność + detal",
+        "scenario": "Połączenie nowoczesnej palisady z klasycznym greckim meandrem. Lekka, ażurowa forma w grafitowym kolorze z dyskretną ozdobą, która nie przytłacza. Prowadzimy od prostoty i koloru, przez akcent wzoru, po zaproszenie do kontaktu",
+        "hook": "Nowoczesny rytm, klasyczny motyw",
+        "hookHighlight": "klasyczny motyw",
         "spans": [
           {
             "from": 2,
+            "to": 2,
+            "text": "Grafitowe profile na wymiar",
+            "highlight": "na wymiar"
+          },
+          {
+            "from": 3,
             "to": 3,
-            "text": "Przez przęsła nadal widać posesję",
-            "highlight": "widać posesję"
+            "text": "Grecki meander — akcent z klasą",
+            "highlight": "Grecki meander"
           },
           {
             "from": 4,
             "to": 4,
-            "text": "Grecki wzór nadaje całości wyraz",
-            "highlight": "Grecki wzór"
+            "text": "Ażurowe — zostawia przestrzeń",
+            "highlight": "Ażurowe"
           },
           {
             "from": 5,
             "to": 5,
-            "text": "Zapisz ten pomysł na ogrodzenie",
-            "highlight": ""
+            "text": "Podoba Ci się ten styl? Napisz do nas!",
+            "highlight": "Napisz"
           }
         ],
-        "cover": "Ozdobny, otwarty front",
+        "cover": "Nowoczesne z meandrem",
         "description": {
-          "firstLine": "Ogrodzenie może być ozdobą frontu, nie zasłaniając całej posesji",
-          "body": "Pionowe przęsła pozostawiają widok na podwórko, a grecki motyw dodaje ogrodzeniu wyrazistego akcentu.\n\nW EXBRAM wykonujemy ogrodzenia na wymiar — także z bramą dopasowaną do całości.",
+          "firstLine": "Grafitowa palisada z greckim wzorem — lekko, spójnie i z charakterem",
+          "body": "Nowoczesne ogrodzenie palisadowe w kolorze grafit/antracyt, z ozdobnym pasem meandra u góry i dołu.\n\nAżurowe wypełnienie daje lekkość i przejrzystość frontu.\n\nBrama dwuskrzydłowa i furtka w tym samym stylu, wykonane na wymiar.\n\nProjekt → produkcja → montaż. Stal ocynkowana i malowana proszkowo. Montujemy w całej Polsce.",
           "hashtags": [
-            "ogrodzenie",
-            "ogrodzeniestalowe",
-            "ogrodzenienawymiar"
+            "ogrodzeniepalisadowe",
+            "ogrodzenienowoczesne",
+            "bramadwuskrzydłowa",
+            "furtka"
           ]
         },
         "missing": [],
         "problems": []
       },
       {
-        "angle": "architektura",
-        "hook": "Jakie ogrodzenie pasuje do takiego domu?",
-        "hookHighlight": "pasuje do takiego domu",
+        "angle": "Geometryczny porządek",
+        "scenario": "Meander porządkuje linię pionowych profili — ozdoba bez przesady. Pokazujemy rytm, spójność i lekkość ażurowej palisady w antracycie. Kończymy jasnym zaproszeniem do kontaktu",
+        "hook": "Geometryczny porządek, zero przesady",
+        "hookHighlight": "porządek",
         "spans": [
           {
             "from": 2,
+            "to": 2,
+            "text": "Pionowe profile dają rytm",
+            "highlight": "rytm"
+          },
+          {
+            "from": 3,
             "to": 3,
-            "text": "Ozdobna forma współgra z bryłą domu",
-            "highlight": "współgra"
+            "text": "Meander spina całą linię",
+            "highlight": "Meander"
           },
           {
             "from": 4,
             "to": 4,
-            "text": "Grecki motyw dodaje klasycznego akcentu",
-            "highlight": "klasycznego akcentu"
+            "text": "Ażurowe — lekko, jasno",
+            "highlight": "Ażurowe"
           },
           {
             "from": 5,
             "to": 5,
-            "text": "Zapisz pomysł na swój front",
-            "highlight": ""
+            "text": "Też chcesz taką palisadę? Skontaktuj się z nami!",
+            "highlight": "Skontaktuj"
           }
         ],
-        "cover": "Ogrodzenie do domu",
+        "cover": "Porządek i rytm",
         "description": {
-          "firstLine": "Nie każde ogrodzenie musi być minimalistyczne, żeby dobrze wyglądać przy domu",
-          "body": "Tutaj dekoracyjne pasy nadają frontowi bardziej klasyczny charakter. Ażurowe przęsła sprawiają, że ogrodzenie nie dominuje nad widoczną za nim zabudową.\n\nEXBRAM projektuje, produkuje i montuje ogrodzenia na wymiar na terenie całej Polski.",
+          "firstLine": "Ozdoba, która nie przytłacza — tylko porządkuje linię ogrodzenia",
+          "body": "Palisadowe ogrodzenie ażurowe w antracycie z dwoma pasami greckiego meandra.\n\nRytm pionów + delikatna ozdoba = spokojny, uporządkowany front.\n\nNa wymiar, z bramą dwuskrzydłową i furtką.\n\nProjekt → produkcja → montaż. Cynk + malowanie proszkowe.",
           "hashtags": [
-            "ogrodzenie",
-            "ogrodzeniedodomu",
-            "ogrodzenienawymiar"
+            "ogrodzenieażurowe",
+            "ogrodzeniepalisadowe",
+            "bramadwuskrzydłowa",
+            "ogrodzeniedonowoczesnegodomu"
           ]
         },
         "missing": [],
         "problems": []
       },
       {
-        "angle": "edukacja",
-        "hook": "Nie chcesz całkiem zasłaniać posesji?",
-        "hookHighlight": "całkiem zasłaniać",
+        "angle": "Grafit i lekkość",
+        "scenario": "Ciemny grafit uspokaja front, ażurowa palisada zostawia przestrzeń. Klasyczny meander dodaje charakteru bez nadmiaru. Od koloru i lekkości przechodzimy do wzoru i funkcji, na końcu zapraszamy do wyceny",
+        "hook": "Ciemny kolor, lekka forma",
+        "hookHighlight": "lekka forma",
         "spans": [
           {
             "from": 2,
+            "to": 2,
+            "text": "Ażurowe — nie zamyka widoku",
+            "highlight": "Ażurowe"
+          },
+          {
+            "from": 3,
             "to": 3,
-            "text": "Ażurowe przęsła zostawiają widok na podwórko",
-            "highlight": "widok na podwórko"
+            "text": "Meander dodaje spokojnej ozdoby",
+            "highlight": "Meander"
           },
           {
             "from": 4,
             "to": 4,
-            "text": "Ozdobny pas nie wypełnia całego przęsła",
-            "highlight": "nie wypełnia"
+            "text": "Brama dwuskrzydłowa w tym wzorze",
+            "highlight": "Brama dwuskrzydłowa"
           },
           {
             "from": 5,
             "to": 5,
-            "text": "Zapytaj o taki wariant u siebie",
-            "highlight": ""
+            "text": "Chcesz podobny efekt u siebie? Daj znać!",
+            "highlight": "Daj znać"
           }
         ],
-        "cover": "Front bez pełnego muru",
+        "cover": "Grafit i lekkość",
         "description": {
-          "firstLine": "Wolisz widzieć podwórko przez ogrodzenie, zamiast całkiem je zasłaniać?",
-          "body": "Pionowe przęsła pozwalają zachować bardziej otwarty widok. Grecki wzór dodaje im ozdobnego charakteru bez pełnej zabudowy.\n\nOgrodzenie wykonujemy na wymiar, dopasowując projekt do konkretnej posesji.",
+          "firstLine": "Ciemny grafit bez ciężaru — ażurowa palisada z klasycznym meandrem",
+          "body": "Nowoczesne ogrodzenie palisadowe w kolorze grafit/antracyt.\n\nAżurowa forma nie zamyka widoku, a grecki meander dodaje dyskretnej ozdoby.\n\nBrama dwuskrzydłowa i furtka, wszystko na wymiar.\n\nOd projektu po montaż. Stal ocynkowana + malowanie proszkowe.",
           "hashtags": [
-            "ogrodzenie",
-            "ogrodzenieazurowe",
-            "ogrodzenienawymiar"
+            "ogrodzenienowoczesne",
+            "ogrodzeniepalisadowe",
+            "bramadwuskrzydłowa",
+            "ogrodzeniedodomu"
           ]
         },
         "missing": [],
-        "problems": []
+        "problems": [
+          "ostatni napis \"Chcesz podobny efekt u siebie? Daj znać!\" ma zapraszać do kontaktu, w stylu „Też chcesz takie ogrodzenie? Skontaktuj się z nami!”"
+        ]
       }
     ],
-    "chosen": 0,
+    "chosen": 1,
     "description": {
-      "firstLine": "Ogrodzenie może być ozdobą frontu, nie zasłaniając całej posesji",
-      "body": "Pionowe przęsła pozostawiają widok na podwórko, a grecki motyw dodaje ogrodzeniu wyrazistego akcentu.\n\nW EXBRAM wykonujemy ogrodzenia na wymiar — także z bramą dopasowaną do całości.",
+      "firstLine": "Ozdoba, która nie przytłacza — tylko porządkuje linię ogrodzenia",
+      "body": "Palisadowe ogrodzenie ażurowe w antracycie z dwoma pasami greckiego meandra.\n\nRytm pionów + delikatna ozdoba = spokojny, uporządkowany front.\n\nNa wymiar, z bramą dwuskrzydłową i furtką.\n\nProjekt → produkcja → montaż. Cynk + malowanie proszkowe.",
       "hashtags": [
-        "ogrodzenie",
-        "ogrodzeniestalowe",
-        "ogrodzenienawymiar"
+        "ogrodzenieażurowe",
+        "ogrodzeniepalisadowe",
+        "bramadwuskrzydłowa",
+        "ogrodzeniedonowoczesnegodomu"
       ]
     },
     "missing": [],
     "problems": []
   },
-  "hook": "Ozdobny front bez zamykania widoku?",
-  "hookHighlight": "bez zamykania",
-  "cover": "Ozdobny, otwarty front"
+  "hook": "Geometryczny porządek, zero przesady",
+  "hookHighlight": "porządek",
+  "cover": "Porządek i rytm"
 }

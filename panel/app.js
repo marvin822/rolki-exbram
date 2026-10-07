@@ -636,6 +636,7 @@ const renderCopyEditor = async (set) => {
             <span class="variant-angle">${escapeHtml(variant.angle || `Wersja ${index + 1}`)}</span>
             ${isChosen ? `<span class="variant-badge">${plan.editedByHand ? "w rolce · poprawiona ręcznie" : "w rolce"}</span>` : ""}
           </header>
+          ${variant.scenario ? `<p class="hint">${escapeHtml(variant.scenario)}</p>` : ""}
           <p class="variant-hook">${escapeHtml(variant.hook)}</p>
           <ol class="variant-boards">
             ${variant.boards
@@ -662,7 +663,7 @@ const renderCopyEditor = async (set) => {
   container.innerHTML = `
     ${
       plan.story
-        ? `<p class="hint"><strong>Historia rolki:</strong> ${escapeHtml(plan.story)}</p>`
+        ? `<p class="hint"><strong>Profil realizacji:</strong> ${escapeHtml(plan.story)}</p>`
         : ""
     }
 
@@ -671,6 +672,11 @@ const renderCopyEditor = async (set) => {
         ? `<h2 class="section-title">Wersje napisów od AI</h2>
            <p class="hint">Copywriter przygotował kilka wersji pod różnymi kątami. Wybierz jedną —
            nowa rolka powstanie w ok. minutę, bez kosztów AI. Wybraną wersję możesz niżej poprawić ręcznie.</p>
+           ${
+             plan.editor?.reason
+               ? `<p class="hint"><strong>Redaktor wybrał wersję ${plan.editor.chosen + 1}:</strong> ${escapeHtml(plan.editor.reason)}</p>`
+               : ""
+           }
            <div class="variants">${variantCards}</div>`
         : ""
     }

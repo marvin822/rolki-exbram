@@ -2,9 +2,6 @@ import fs from "fs";
 import path from "path";
 import OpenAI from "openai";
 
-import { makePreview } from "./media-preview.mjs";
-import { getSetDir } from "./reel-set.mjs";
-
 /*
  * Copywriter — napisy na ekran, tekst okładki i opis rolki,
  * pisane PO ułożeniu montażu.
@@ -13,17 +10,20 @@ import { getSetDir } from "./reel-set.mjs";
  * (exbram-rolki-instrukcje-agenta.md), wczytywany przy każdym
  * przebiegu. Kod dokłada tylko to, czego brief nie może wiedzieć:
  * jak działa montaż i plansza końcowa oraz w jakim formacie oddać
- * wynik. Wcześniej te dodatki były długą listą reguł, z których
- * część przeczyła briefowi (np. zakaz CTA na ostatniej planszy) —
- * model zgadywał, czego słuchać.
+ * wynik.
  *
- * Copywriter OGLĄDA ujęcia rolki i jedno ujęcie całej realizacji
- * z domem. Z samych opisów analizy („metal horizontal-slat fence”)
- * nie dało się ocenić stylu domu, gęstości lameli ani tego, co
- * realizacja daje klientowi — wychodziły ogólniki.
+ * Napisy powstają z PROFILU REALIZACJI (styl, kolor, brama, mur —
+ * zapisuje go planer w analyze-image.mjs) przez scenariusz, a nie
+ * z oglądania kadrów. Gdy copywriter oglądał ujęcia, szukał powiązań
+ * w kadrze („ciemny kolor nawiązuje do dachu”) — właściciel odrzucił
+ * to podejście (brief, sekcje 2 i 6).
  *
- * Powstają 3 wersje napisów pod różnymi kątami (brief, sekcja 8).
- * Pierwsza poprawna trafia do rolki, pozostałe można wybrać w panelu
+ * Hook stoi na scenie 1, potem jeden napis przy każdej kolejnej
+ * scenie; ostatni zaprasza do kontaktu („Też chcesz takie
+ * ogrodzenie? …”), po nim plansza końcowa.
+ *
+ * Powstają 3 wersje napisów z różnymi scenariuszami. Pierwsza
+ * poprawna trafia do rolki, pozostałe można wybrać w panelu
  * i przerenderować bez kosztów AI.
  *
  * Kod sprawdza każdą wersję: limity słów i czasu czytania, zakazane
@@ -43,6 +43,12 @@ const client = new OpenAI({
  * REEL_COPY_MODEL=gpt-6.1-sol node write-copy.mjs
  */
 const COPY_MODEL = process.env.REEL_COPY_MODEL || "gpt-5";
+
+/*
+ * Model redaktora, który wybiera wersję do rolki (chooseVariant).
+ * Ocenia sam tekst, więc wystarcza tańszy model.
+ */
+const EDITOR_MODEL = process.env.REEL_EDITOR_MODEL || "gpt-5-mini";
 
 /*
  * Zuzycie tokenow sumowane przez caly krok - copywriter potrafi
@@ -77,7 +83,7 @@ const reportUsage = () => {
   const n = (value) => value.toLocaleString("pl-PL");
 
   console.log(
-    `\nTokeny (${COPY_MODEL}, ${usageTotal.calls} wywolan): ` +
+    `\nTokeny (copywriter ${COPY_MODEL}, redaktor ${EDITOR_MODEL}; ${usageTotal.calls} wywolan): ` +
       `wejscie ${n(usageTotal.input)}` +
       (usageTotal.cachedInput > 0
         ? ` (w tym ${n(usageTotal.cachedInput)} z cache)`
@@ -96,10 +102,6 @@ const BRIEF_FILE = path.join(ROOT, "exbram-rolki-instrukcje-agenta.md");
 
 const EDIT_FILE = path.join(ROOT, "edit.json");
 
-const ANALYSIS_FILE = path.join(ROOT, "analysis.json");
-
-const VIDEO_ANALYSIS_FILE = path.join(ROOT, "video-analysis.json");
-
 /*
  * Pamięć hooków z poprzednich rolek — lokalnie, poza gitem, wspólna
  * dla zestawów. Blokujemy tylko IDENTYCZNE hooki: dobre, sprawdzone
@@ -114,7 +116,7 @@ const TEXT_HISTORY_LIMIT = 24;
 const HOOK_HISTORY_CHECK = 12;
 
 /*
- * Limity z briefu (sekcje 10, 15, 31) i z rozmiaru fontu
+ * Limity z briefu (sekcje 7, 8, 12) i z rozmiaru fontu
  * w Composition.tsx (dwie linie tekstu).
  */
 const HOOK_WORDS = [4, 9];
@@ -142,17 +144,25 @@ const MESSAGE_MAX_CHARS = 56;
  */
 const HARD_MAX_CHARS = 80;
 
-/*
- * Liczba plansz PO hooku. Brief (sekcja 13) mówi o 2-4 planszach razem
- * z hookiem i wprost pozwala zostawić ujęcie bez napisu, więc dolna
- * granica to jedna. Wcześniejsze minimum 2 wymuszało co najmniej cztery
- * plansze w rolce i to właśnie produkowało wypełniacze.
- */
-const MESSAGES_RANGE = [1, 3];
-
-const MAX_SCENES_PER_MESSAGE = 3;
-
 const COVER_MAX_WORDS = 4;
+
+/*
+ * Ostatni napis zaprasza do kontaktu (brief, sekcja 3). Sprawdzamy
+ * tylko, czy w ogóle jest wezwaniem — po rdzeniach czasowników.
+ */
+const INVITE_WORDS = [
+  "napisz",
+  "zadzwo",
+  "skontaktuj",
+  "zapytaj",
+  "odezwij",
+  "zrobimy",
+  "wycen",
+  "porozmawiaj",
+  "umów",
+  "dzwoń",
+  "daj",
+];
 
 const MAX_UPPERCASE_WORDS = 3;
 
@@ -180,7 +190,7 @@ const END_CARD = {
 };
 
 /*
- * Zakazane wzorce — brief, sekcje 12, 21 i 32. Zapisane małymi
+ * Zakazane wzorce — brief, sekcje 7 i 11. Zapisane małymi
  * literami, porównywane z tekstem małymi literami.
  */
 const FORBIDDEN_PATTERNS = [
@@ -224,14 +234,14 @@ const FORBIDDEN_PATTERNS = [
   "najtańsz",
   "najtaniej",
   "bez marży",
-  // Tylko strona główna — bez linków do podstron (brief, sekcja 4).
+  // Tylko strona główna — bez linków do podstron (brief, sekcja 9).
   "kalkulator",
   "exbram.pl/",
 ];
 
 /*
  * Obietnice, których ogrodzenie nie spełnia — lamele i panele są
- * ażurowe, nie tłumią dźwięku ani wiatru (brief, sekcja 22).
+ * ażurowe, nie tłumią dźwięku ani wiatru (brief, sekcja 10).
  */
 const FALSE_PROMISES = ["cisz", "hałas", "wycisz", "akustyc", "wiatr", "kurz"];
 
@@ -357,16 +367,14 @@ const readBrief = () => {
 };
 
 /*
- * Fakty o firmie = sekcja briefu z „Fakty o EXBRAM” w nagłówku, do
- * następnego nagłówka tego samego albo wyższego poziomu. Liczby
- * z niej (ceny, telefon, 20 lat) wolno pokazać; liczby z przykładów
- * w dalszych sekcjach („6-metrowa brama”) już nie.
+ * Sekcja briefu: od nagłówka pasującego do wzorca do następnego
+ * nagłówka tego samego albo wyższego poziomu.
  */
-const getFactsSection = (brief) => {
+const getSection = (brief, pattern) => {
   const lines = brief.split(/\r?\n/);
 
   const start = lines.findIndex(
-    (line) => /^#{1,6}\s/.test(line) && /fakty o exbram/i.test(line),
+    (line) => /^#{1,6}\s/.test(line) && pattern.test(line),
   );
 
   if (start === -1) {
@@ -386,167 +394,113 @@ const getFactsSection = (brief) => {
 };
 
 /*
- * Sceny rolki dla copywritera: rola w historii, czas i opis od
- * planera (co widać z punktu widzenia klienta), a w razie braku —
- * opis z analizy kadru.
+ * Fakty o firmie. Liczby z nich (ceny, telefon, 20 lat) wolno
+ * pokazać; liczby z przykładów w innych sekcjach już nie.
+ */
+const getFactsSection = (brief) => getSection(brief, /fakty o exbram/i);
+
+/*
+ * Kryteria redaktora — tylko sekcje briefu o tym, jakie mają być
+ * hasła, a nie cały brief: redaktor ocenia gotowe teksty, nie pisze.
+ */
+const getEditorCriteria = (brief) =>
+  [
+    getSection(brief, /jakie mają być hasła/i),
+    getSection(brief, /czego nie pisać/i),
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+/*
+ * Sceny rolki dla copywritera: tylko rodzaj, rola i czas. Bez opisu
+ * kadru — napisy wychodzą z profilu i scenariusza (brief, sekcja 4:
+ * „nie szukaj powiązań w kadrze”).
  */
 const describeScenes = (scenes) => {
-  const photos = readJson(ANALYSIS_FILE, []);
-
-  const videos = readJson(VIDEO_ANALYSIS_FILE, []);
-
-  const fragments = new Map();
-
-  videos.forEach((video) => {
-    (video.fragments ?? []).forEach((fragment) => {
-      fragments.set(fragment.fragmentId, fragment);
-    });
-  });
-
   let elapsed = 0;
 
   return scenes.map((scene, index) => {
-    const from = elapsed;
-
     elapsed += Number(scene.duration);
-
-    const fallback = scene.fragmentId
-      ? String(fragments.get(scene.fragmentId)?.reason ?? "")
-      : String(
-          photos.find((item) => item.file === scene.file)?.subject ?? "",
-        );
 
     return {
       scene: index + 1,
       type: scene.fragmentId ? "film" : "zdjęcie",
       role: scene.role ?? "",
-      time: `${from.toFixed(1)}-${elapsed.toFixed(1)} s`,
-      shows: (scene.shows || fallback).slice(0, 400),
+      seconds: Number(Number(scene.duration).toFixed(1)),
+      text:
+        index === 0
+          ? "HOOK"
+          : index === scenes.length - 1
+            ? "NAPIS-ZAPROSZENIE"
+            : "napis o ogrodzeniu",
     };
   });
 };
 
 /*
- * Obrazy dla copywritera: każda scena rolki (dla filmu — środek
- * fragmentu) i ujęcie całej realizacji z domem, jeśli planer je
- * wskazał, a nie ma go w scenach.
+ * Profil realizacji z planu montażu. Starsze plany mają tylko "story".
  */
-const buildScenePreviews = (editPlan) => {
-  const setDir = getSetDir(editPlan.set);
-
-  const content = [];
-
-  editPlan.scenes.forEach((scene, index) => {
-    const preview = makePreview(
-      path.join(setDir, scene.file),
-      scene.fragmentId
-        ? {
-            seekSeconds:
-              Number(scene.start ?? 0) + Number(scene.duration ?? 0) / 2,
-          }
-        : {},
-    );
-
-    if (preview) {
-      content.push(
-        {
-          type: "input_text",
-          text: `SCENA ${index + 1}`,
-        },
-        {
-          type: "input_image",
-          image_url: preview,
-          detail: "low",
-        },
-      );
-    }
-  });
-
-  const contextFile = editPlan.contextFile;
-
-  if (
-    contextFile &&
-    !editPlan.scenes.some((scene) => scene.file === contextFile)
-  ) {
-    const preview = makePreview(path.join(setDir, contextFile));
-
-    if (preview) {
-      content.push(
-        {
-          type: "input_text",
-          text: "CAŁA REALIZACJA Z DOMEM (poza montażem — dla kontekstu)",
-        },
-        {
-          type: "input_image",
-          image_url: preview,
-          detail: "low",
-        },
-      );
-    }
-  }
-
-  return content;
-};
+const describeProfile = (editPlan) =>
+  editPlan.profile
+    ? JSON.stringify(editPlan.profile, null, 2)
+    : editPlan.story || "(brak profilu — pisz ogólnie o ogrodzeniu stalowym)";
 
 const buildPrompt = ({ brief, editPlan, sceneList, history, feedback }) => {
   const sceneCount = sceneList.length;
 
-  const total = sceneList.at(-1)?.time?.split("-")[1] ?? "";
+  const total = sceneList
+    .reduce((sum, item) => sum + item.seconds, 0)
+    .toFixed(1);
 
   return `${brief}
 
 ==========================================================
-JAK DZIAŁA TEN MONTAŻ — dopełnienie briefu
+TA ROLKA — dane do napisów
 ==========================================================
 
-Rolka jest JUŻ zmontowana: ${sceneCount} scen, materiał ${total}, potem
-3,5 s planszy końcowej. Obrazy scen są poniżej (SCENA 1, 2, …) — oglądaj
-je, a opisy scen traktuj jako pomoc. Ujęć ani ich długości nie zmieniasz.
+PROFIL REALIZACJI (krok 1 z briefu):
+${describeProfile(editPlan)}
 
-Historia od montażysty: ${editPlan.story || "(brak)"}
+Rolka jest JUŻ zmontowana: ${sceneCount} scen, ${total} s materiału, potem
+3,5 s planszy końcowej. Ujęć ani ich długości nie zmieniasz.
 
 SCENY:
 ${JSON.stringify(sceneList, null, 2)}
 
 Co z tego wynika dla napisów:
 
-1. Hook stoi na scenie 1. Kolejne plansze (messages) obejmują 1-${MAX_SCENES_PER_MESSAGE}
-   KOLEJNE sceny (fromScene..toScene, od sceny 2) i zmieniają się z cięciem —
-   jedna plansza = jedna myśl o tym, co widać w jej scenach. Od sceny 2 do
-   końca najwyżej jedna scena z rzędu bez napisu.
+1. Każda wersja zaczyna się od scenariusza (krok 2 z briefu) — pole
+   scenario, 2-3 zdania. Napisy piszesz na jego podstawie.
 
-2. Po ostatniej scenie wchodzi automatycznie plansza końcowa: logo,
+2. hook stoi na scenie 1. messages to napisy do scen 2..${sceneCount}
+   w kolejności — DOKŁADNIE ${Math.max(0, sceneCount - 1)}, po jednym na scenę.
+   Ostatni z nich (scena ${sceneCount}) to napis-zaproszenie w stylu
+   „Też chcesz takie ogrodzenie? Skontaktuj się z nami!” — za każdym
+   razem sformułowany trochę inaczej.
+
+3. Napis musi dać się przeczytać, zanim zniknie: ok. 0,3 s na słowo
+   + 0,5 s. Przy scenie 2,5 s to najwyżej 6 słów.
+
+4. Po ostatniej scenie wchodzi automatycznie plansza końcowa: logo,
    "Ogrodzenia, które robią różnicę", "${END_CARD.cta}", tel. ${END_CARD.phone},
-   ${END_CARD.web}. Ostatnia plansza tekstowa może więc być miękkim CTA
-   z briefu (np. pytanie o podobny efekt) — ale BEZ telefonu, adresu
-   strony i e-maila: te są na planszy końcowej.
+   ${END_CARD.web}. Na ekranie BEZ telefonu, adresu strony i e-maila.
 
-3. Na ekranie i w okładce nie ma "[UZUPEŁNIJ…]": napisz planszę bez
-   brakującej danej, a brak dopisz do "missing". Bez emoji na ekranie
-   (font ich nie ma). W opisie też bez placeholderów — braki idą do
-   "missing" i trafią pod opis jako lista do uzupełnienia.
+5. Na ekranie i w okładce nie ma "[UZUPEŁNIJ…]" ani emoji (font ich nie
+   ma). W opisie też bez placeholderów — braki wpisz do "missing".
 
-4. Możesz pisać, do jakiego DOMU pasuje ten styl — ale na poziomie bryły
-   i charakteru ("pasuje do nowoczesnej bryły", "nie przytłacza niskiego
-   domu"), nigdy przez zestawienie z pojedynczym elementem budynku.
-   Nikt nie dobiera ogrodzenia do dachu, rynien, okien ani kostki na
-   podjeździe — patrz brief, sekcja 16, błąd 3.
+6. Przygotuj ${VARIANT_COUNT} WERSJE, każdą z INNYM scenariuszem (inna główna
+   myśl), najlepszą jako pierwszą. angle to 1-3 słowa nazwy pomysłu.
+   Każda wersja to komplet: scenariusz, hook, napisy, okładka, opis.
 
-5. Przygotuj ${VARIANT_COUNT} WERSJE napisów, każdą pod INNYM kątem z sekcji 8
-   briefu (np. prywatność / dopasowanie do architektury / inspiracja),
-   najlepszą jako pierwszą. Każda wersja to komplet: hook, plansze,
-   okładka, opis.
+7. hookHighlight / highlight: 1-2 słowa skopiowane DOKŁADNIE z tekstu
+   napisu — pokażemy je kolorem akcentu. Może być "".
 
-6. hookHighlight / highlight: 1-2 słowa skopiowane DOKŁADNIE z tekstu
-   planszy — pokażemy je kolorem akcentu. Może być "".
-
-7. Opis (sekcja 29 briefu): firstLine (do ${FIRST_LINE_MAX_CHARS} znaków), body
+8. Opis (sekcja 13 briefu): firstLine (do ${FIRST_LINE_MAX_CHARS} znaków), body
    (2-4 krótkie akapity oddzielone \\n\\n), hashtags (${HASHTAGS_RANGE[0]}-${HASHTAGS_RANGE[1]} tematyczne,
    bez "#" i bez "exbram" — dodamy). CTA "Darmowa wycena: ${END_CARD.phone} lub
    ${END_CARD.web}" dokleja kod — nie pisz go w body.
 
-8. Wynik zwróć jako JSON według schematu — zamiast formatu z sekcji 34
-   briefu. Analizę z sekcji 34 wpisz w pole analysis.
+9. Wynik zwróć jako JSON według schematu.
 
 HOOKI Z POPRZEDNICH ROLEK (nie powtarzaj ich słowo w słowo):
 ${history.length > 0 ? history.map((text) => `- ${text}`).join("\n") : "(brak)"}
@@ -559,10 +513,8 @@ const MESSAGE_SCHEMA = {
   properties: {
     text: { type: "string" },
     highlight: { type: "string" },
-    fromScene: { type: "integer" },
-    toScene: { type: "integer" },
   },
-  required: ["text", "highlight", "fromScene", "toScene"],
+  required: ["text", "highlight"],
 };
 
 const VARIANT_SCHEMA = {
@@ -570,6 +522,7 @@ const VARIANT_SCHEMA = {
   additionalProperties: false,
   properties: {
     angle: { type: "string" },
+    scenario: { type: "string" },
     hook: { type: "string" },
     hookHighlight: { type: "string" },
     messages: { type: "array", items: MESSAGE_SCHEMA },
@@ -588,6 +541,7 @@ const VARIANT_SCHEMA = {
   },
   required: [
     "angle",
+    "scenario",
     "hook",
     "hookHighlight",
     "messages",
@@ -617,25 +571,9 @@ const requestCopy = async (content) => {
           type: "object",
           additionalProperties: false,
           properties: {
-            // Typ materiału z sekcji 7 briefu.
-            type: {
-              type: "string",
-              enum: ["A", "B", "C", "D", "E", "F", "G", "H"],
-            },
-            analysis: {
-              type: "object",
-              additionalProperties: false,
-              properties: {
-                atut: { type: "string" },
-                potrzeba: { type: "string" },
-                efekt: { type: "string" },
-                dlaczego: { type: "string" },
-              },
-              required: ["atut", "potrzeba", "efekt", "dlaczego"],
-            },
             variants: { type: "array", items: VARIANT_SCHEMA },
           },
-          required: ["type", "analysis", "variants"],
+          required: ["variants"],
         },
       },
     },
@@ -651,65 +589,104 @@ const requestCopy = async (content) => {
 };
 
 /*
- * Porządkuje odcinki plansz: przycina do scen 2..N, odrzuca
- * nakładające się i nadmiarowe, a dziury dłuższe niż jedna scena
- * łata, przedłużając sąsiednią planszę w granicach
- * MAX_SCENES_PER_MESSAGE.
+ * Redaktor — wybiera wersję do rolki. Wcześniej szła pierwsza wersja
+ * bez usterek mechanicznych, a kontrola liczy słowa i znaki, więc nie
+ * odróżnia dobrego hasła od dziwnego. Redaktor dostaje sam tekst
+ * (bez obrazów i bez całego briefu), więc to tanie wywołanie.
+ */
+const chooseVariant = async ({ brief, editPlan, candidates }) => {
+  const list = candidates
+    .map(
+      ({ variant }, index) =>
+        `WERSJA ${index + 1} [${variant.angle}]
+Hook: ${variant.hook}
+${variant.spans.map((span) => `Scena ${span.from}: ${span.text}`).join("\n")}
+Okładka: ${variant.cover}`,
+    )
+    .join("\n\n");
+
+  const response = await client.responses.create({
+    model: EDITOR_MODEL,
+
+    input: [
+      {
+        role: "user",
+        content: `Jesteś redaktorem rolek EXBRAM (ogrodzenia stalowe). Copywriter
+przygotował ${candidates.length} wersje napisów na ekran. Wybierz JEDNĄ do rolki.
+
+Kryteria, w tej kolejności:
+1. Hook zatrzymuje kciuk — chce się przeczytać do końca.
+2. Każdy napis brzmi naturalnie i jest zrozumiały w sekundę — nic
+   dziwnego, wydumanego ani sloganu z generatora.
+3. Napisy mówią o charakterze i wrażeniu, a nie wyliczają elementów
+   konstrukcji ani nie opisują kadru.
+4. Całość układa się w jedną myśl i kończy zaproszeniem do kontaktu.
+
+Zasady z briefu:
+${getEditorCriteria(brief)}
+
+PROFIL REALIZACJI:
+${describeProfile(editPlan)}
+
+${list}
+
+W reason napisz jednym zdaniem po polsku, dlaczego ta wersja.`,
+      },
+    ],
+
+    text: {
+      format: {
+        type: "json_schema",
+        name: "reel_copy_choice",
+        strict: true,
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            chosen: { type: "integer" },
+            reason: { type: "string" },
+          },
+          required: ["chosen", "reason"],
+        },
+      },
+    },
+  });
+
+  recordUsage(response.usage);
+
+  const result = JSON.parse(response.output_text || "{}");
+
+  const index = Math.round(Number(result.chosen)) - 1;
+
+  if (!(index >= 0 && index < candidates.length)) {
+    throw new Error(`redaktor wskazał nieistniejącą wersję (${result.chosen})`);
+  }
+
+  return { index, reason: cleanText(result.reason) };
+};
+
+/*
+ * Napisy do scen 2..N, po jednym na scenę. Zapisujemy je jako odcinki
+ * jednoscenowe (from = to) — w tym formacie czytają je panel
+ * i applyVariant. Gdy napisów jest za mało, ostatni (zaproszenie)
+ * i tak ląduje na ostatniej scenie; brak zgłasza findProblems.
  */
 const normalizeSpans = (messages, sceneCount) => {
-  const spans = [];
-
-  [...messages]
+  const texts = messages
     .map((message) => {
       const text = screenText(message.text);
 
-      return {
-        text,
-        highlight: cleanHighlight(message.highlight, text),
-        from: Math.max(2, Math.round(message.fromScene)),
-        to: Math.min(sceneCount, Math.round(message.toScene)),
-      };
+      return { text, highlight: cleanHighlight(message.highlight, text) };
     })
-    .filter((span) => span.text && span.from <= span.to)
-    .sort((a, b) => a.from - b.from)
-    .forEach((span) => {
-      const last = spans[spans.length - 1];
+    .filter((message) => message.text)
+    .slice(0, Math.max(0, sceneCount - 1));
 
-      if (
-        spans.length >= MESSAGES_RANGE[1] ||
-        (last && span.from <= last.to)
-      ) {
-        return;
-      }
+  return texts.map((message, index) => {
+    const scene =
+      index === texts.length - 1 ? sceneCount : index + 2;
 
-      spans.push({
-        ...span,
-        to: Math.min(span.to, span.from + MAX_SCENES_PER_MESSAGE - 1),
-      });
-    });
-
-  const length = (span) => span.to - span.from + 1;
-
-  while (
-    spans.length > 0 &&
-    spans[0].from - 2 > 1 &&
-    length(spans[0]) < MAX_SCENES_PER_MESSAGE
-  ) {
-    spans[0].from -= 1;
-  }
-
-  spans.forEach((span, index) => {
-    const nextFrom = spans[index + 1]?.from ?? sceneCount + 1;
-
-    while (
-      nextFrom - span.to - 1 > 1 &&
-      length(span) < MAX_SCENES_PER_MESSAGE
-    ) {
-      span.to += 1;
-    }
+    return { ...message, from: scene, to: scene };
   });
-
-  return spans;
 };
 
 /*
@@ -724,6 +701,7 @@ const normalizeVariant = (raw, sceneCount) => {
 
   return {
     angle: cleanText(raw.angle),
+    scenario: cleanText(raw.scenario),
     hook,
     hookHighlight: cleanHighlight(raw.hookHighlight, hook),
     spans: normalizeSpans(raw.messages ?? [], sceneCount),
@@ -746,7 +724,7 @@ const normalizeVariant = (raw, sceneCount) => {
 /*
  * Problemy pojedynczego tekstu ekranowego (hook, plansza, okładka).
  */
-const checkScreenText = (text, label, allowedNumbers) => {
+const checkScreenText = (text, label, allowedNumbers, maxMarks = 1) => {
   const problems = [];
 
   const lower = text.toLowerCase();
@@ -812,8 +790,12 @@ const checkScreenText = (text, label, allowedNumbers) => {
     problems.push(`${label} "${text}" to pytanie — musi mieć znak zapytania`);
   }
 
-  if ((text.match(/[?!]/g) ?? []).length > 1) {
-    problems.push(`${label} "${text}" — najwyżej jeden znak ? lub !`);
+  if ((text.match(/[?!]/g) ?? []).length > maxMarks) {
+    problems.push(
+      maxMarks === 1
+        ? `${label} "${text}" — najwyżej jeden znak ? lub !`
+        : `${label} "${text}" — najwyżej jedno pytanie i jeden wykrzyknik`,
+    );
   }
 
   /*
@@ -890,9 +872,24 @@ const findProblems = (variant, { sceneSeconds, history, allowedNumbers }) => {
     );
   }
 
-  if (spans.length < MESSAGES_RANGE[0]) {
+  const needed = sceneSeconds.length - 1;
+
+  if (spans.length !== needed) {
     problems.push(
-      `potrzebne są co najmniej ${MESSAGES_RANGE[0]} plansze po hooku, jest ${spans.length}`,
+      `napisów po hooku ma być ${needed} (po jednym na każdą scenę 2-${sceneSeconds.length}), jest ${spans.length}`,
+    );
+  }
+
+  const invite = needed > 0 ? spans.at(-1) : null;
+
+  if (
+    invite &&
+    !toWords(invite.text).some((word) =>
+      INVITE_WORDS.some((stem) => word.startsWith(stem)),
+    )
+  ) {
+    problems.push(
+      `ostatni napis "${invite.text}" ma zapraszać do kontaktu, w stylu „Też chcesz takie ogrodzenie? Skontaktuj się z nami!”`,
     );
   }
 
@@ -915,15 +912,22 @@ const findProblems = (variant, { sceneSeconds, history, allowedNumbers }) => {
       .slice(span.from - 1, span.to)
       .reduce((total, value) => total + value, 0);
 
-    const needed = Math.max(1.5, 0.3 * words + 0.5);
+    const reading = Math.max(1.5, 0.3 * words + 0.5);
 
-    if (seconds < needed) {
+    if (seconds < reading) {
       problems.push(
-        `plansza "${span.text}" stoi ${seconds.toFixed(1)} s, a do przeczytania potrzeba ${needed.toFixed(1)} s — skróć ją albo rozciągnij na więcej scen`,
+        `napis "${span.text}" stoi ${seconds.toFixed(1)} s, a do przeczytania potrzeba ${reading.toFixed(1)} s — skróć go`,
       );
     }
 
-    problems.push(...checkScreenText(span.text, "plansza", allowedNumbers));
+    problems.push(
+      ...checkScreenText(
+        span.text,
+        "napis",
+        allowedNumbers,
+        span === invite ? 2 : 1,
+      ),
+    );
   });
 
   const texts = [hook, ...spans.map((span) => span.text)].map(
@@ -932,22 +936,6 @@ const findProblems = (variant, { sceneSeconds, history, allowedNumbers }) => {
 
   if (new Set(texts).size < texts.length) {
     problems.push("dwie plansze mają ten sam tekst — każda ma wnosić coś nowego");
-  }
-
-  let gap = 0;
-
-  for (let scene = 2; scene <= sceneSeconds.length; scene += 1) {
-    const covered = spans.some(
-      (span) => scene >= span.from && scene <= span.to,
-    );
-
-    gap = covered ? 0 : gap + 1;
-
-    if (gap === 2) {
-      problems.push(
-        `sceny ${scene - 1}-${scene} są bez napisu — najwyżej jedna scena z rzędu może być pusta`,
-      );
-    }
   }
 
   if (!cover || countWords(cover) > COVER_MAX_WORDS) {
@@ -1026,6 +1014,7 @@ const findProblems = (variant, { sceneSeconds, history, allowedNumbers }) => {
  */
 const toStoredVariant = (variant, problems) => ({
   angle: variant.angle,
+  scenario: variant.scenario,
   hook: fitText(variant.hook, HARD_MAX_CHARS),
   hookHighlight: cleanHighlight(
     variant.hookHighlight,
@@ -1099,20 +1088,16 @@ const main = async () => {
   const sceneSeconds = editPlan.scenes.map((scene) => Number(scene.duration));
 
   /*
-   * Liczby, które wolno pokazać: z faktów briefu i z opisów scen.
+   * Liczby, które wolno pokazać: z faktów briefu i z profilu realizacji.
    */
   const allowedNumbers = new Set(
-    getNumbers(
-      [getFactsSection(brief), editPlan.story ?? "", ...sceneList.map((item) => item.shows)].join("\n"),
-    ),
+    getNumbers([getFactsSection(brief), describeProfile(editPlan)].join("\n")),
   );
 
   const history = readTextHistory();
 
-  const previews = buildScenePreviews(editPlan);
-
   console.log(
-    `Copywriter (${COPY_MODEL}) ogląda ${previews.filter((item) => item.type === "input_image").length} ujęć...`,
+    `Copywriter (${COPY_MODEL}) pisze napisy do ${sceneList.length} scen z profilu realizacji...`,
   );
 
   const context = { sceneSeconds, history, allowedNumbers };
@@ -1127,7 +1112,6 @@ const main = async () => {
         type: "input_text",
         text: buildPrompt({ brief, editPlan, sceneList, history, feedback }),
       },
-      ...previews,
     ]);
 
     const variants = (raw.variants ?? [])
@@ -1138,17 +1122,18 @@ const main = async () => {
         problems: findProblems(variant, context),
       }));
 
-    console.log(`\nPróba ${attempt} — typ ${raw.type}`);
+    console.log(`\nPróba ${attempt}`);
 
     variants.forEach(({ variant, problems }, index) => {
       console.log(`\n  Wersja ${index + 1} [${variant.angle}]`);
+      console.log(`    scenariusz: ${variant.scenario}`);
       console.log(
         `    hook: "${variant.hook}"${variant.hookHighlight ? ` [${variant.hookHighlight}]` : ""}`,
       );
 
       variant.spans.forEach((span) =>
         console.log(
-          `    sceny ${span.from}-${span.to}: "${span.text}"${span.highlight ? ` [${span.highlight}]` : ""}`,
+          `    scena ${span.from}: "${span.text}"${span.highlight ? ` [${span.highlight}]` : ""}`,
         ),
       );
 
@@ -1186,26 +1171,42 @@ const main = async () => {
     throw new Error("AI nie zwróciło żadnej wersji napisów.");
   }
 
-  /*
-   * Do rolki idzie pierwsza wersja bez uwag (model ustawia najlepszą
-   * na początku), a gdy takiej nie ma — ta z najmniejszą liczbą uwag.
-   */
   const stored = best.variants.map(({ variant, problems }) =>
     toStoredVariant(variant, problems),
   );
 
-  const cleanIndex = stored.findIndex((item) => item.problems.length === 0);
+  /*
+   * Kandydaci do rolki: wersje z najmniejszą liczbą uwag (zwykle
+   * wszystkie bez uwag). Spośród nich wybiera redaktor; gdy redaktor
+   * zawiedzie, idzie pierwsza z nich.
+   */
+  const fewest = Math.min(...stored.map((item) => item.problems.length));
 
-  const chosen =
-    cleanIndex !== -1
-      ? cleanIndex
-      : stored.reduce(
-          (bestIndex, item, index) =>
-            item.problems.length < stored[bestIndex].problems.length
-              ? index
-              : bestIndex,
-          0,
-        );
+  const candidates = best.variants
+    .map((item, index) => ({ ...item, index }))
+    .filter((item) => item.problems.length === fewest);
+
+  let chosen = candidates[0].index;
+
+  let editor = null;
+
+  if (candidates.length > 1) {
+    try {
+      const choice = await chooseVariant({ brief, editPlan, candidates });
+
+      chosen = candidates[choice.index].index;
+
+      editor = { model: EDITOR_MODEL, chosen, reason: choice.reason };
+
+      console.log(
+        `\nRedaktor (${EDITOR_MODEL}) wybrał wersję ${chosen + 1}: ${choice.reason}`,
+      );
+    } catch (error) {
+      console.warn(
+        `\nUWAGA: redaktor nie wybrał wersji (${error.message}) — biorę wersję ${chosen + 1}.`,
+      );
+    }
+  }
 
   if (stored[chosen].problems.length > 0) {
     console.warn(
@@ -1218,8 +1219,7 @@ const main = async () => {
       ...editPlan,
       copy: {
         model: COPY_MODEL,
-        type: cleanText(best.raw.type),
-        analysis: best.raw.analysis,
+        editor,
         variants: stored,
       },
     },
