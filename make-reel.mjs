@@ -90,6 +90,10 @@ const steps = [
     args: ["analyze-image.mjs"],
   },
   {
+    name: "Napisy na ekran (copywriter)",
+    args: ["write-copy.mjs"],
+  },
+  {
     name: "Normalizacja filmów",
     args: ["normalize-videos.mjs"],
   },

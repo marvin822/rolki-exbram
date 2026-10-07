@@ -60,11 +60,14 @@ type EditScene = {
   start: number;
   reason: string;
   caption?: string;
+  captionHighlight?: string;
 };
 
 type EditPlan = {
   set?: string;
   hook?: string;
+  hookHighlight?: string;
+  cover?: string;
   scenes: EditScene[];
 };
 
@@ -75,6 +78,7 @@ type EditPlan = {
  */
 type SceneOverlay = {
   text: string;
+  highlight?: string;
 };
 
 type Scene =
@@ -118,6 +122,13 @@ const END_TRANSITION_DURATION = 12;
 const END_CARD_DURATION = 3.5;
 
 const BRAND_RED = "#a31f22";
+
+/*
+ * Kolor akcentu do wyróżniania słowa kluczowego w napisach (brief:
+ * zawsze ten sam kolor). Czerwień z logo jest za ciemna na ciemnej
+ * etykiecie i przyciemnionym niebie, więc to jej jaśniejszy odcień.
+ */
+const ACCENT_COLOR = "#ef3e42";
 
 const PHONE_NUMBER =
   "502 492 009";
@@ -404,7 +415,11 @@ const getSceneOverlay = (
       : "";
 
   return text
-    ? { text }
+    ? {
+        text,
+        highlight:
+          editData.hookHighlight,
+      }
     : undefined;
 };
 
@@ -758,6 +773,58 @@ const attachShortWords = (
   );
 };
 
+/*
+ * Tekst napisu z wyróżnionym słowem kluczowym w kolorze akcentu.
+ * Wyróżnienie to fragment tekstu wskazany przez copywritera
+ * (write-copy.mjs pilnuje, żeby w nim był); szukamy go bez względu
+ * na wielkość liter, po sklejeniu krótkich słów twardą spacją.
+ */
+const renderHighlighted = (
+  text: string,
+  highlight?: string,
+) => {
+  const prepared =
+    attachShortWords(text);
+
+  const wanted = highlight
+    ? attachShortWords(
+        highlight.trim(),
+      )
+    : "";
+
+  const index = wanted
+    ? prepared
+        .toLowerCase()
+        .indexOf(
+          wanted.toLowerCase(),
+        )
+    : -1;
+
+  if (index === -1) {
+    return prepared;
+  }
+
+  return (
+    <>
+      {prepared.slice(0, index)}
+      <span
+        style={{
+          color: ACCENT_COLOR,
+        }}
+      >
+        {prepared.slice(
+          index,
+          index +
+            wanted.length,
+        )}
+      </span>
+      {prepared.slice(
+        index + wanted.length,
+      )}
+    </>
+  );
+};
+
 const HookText: React.FC<{
   overlay: SceneOverlay;
   sceneFrames: number;
@@ -870,8 +937,9 @@ const HookText: React.FC<{
               HOOK_SHADOW,
           }}
         >
-          {attachShortWords(
+          {renderHighlighted(
             overlay.text,
+            overlay.highlight,
           )}
         </div>
       </div>
@@ -893,6 +961,7 @@ const HookText: React.FC<{
  */
 type MessageSpan = {
   text: string;
+  highlight?: string;
   fromFrame: number;
   toFrame: number;
   lastIndex: number;
@@ -945,6 +1014,10 @@ const messageSpans: MessageSpan[] =
         } else if (caption) {
           spans.push({
             text: caption,
+            highlight:
+              editData.scenes[
+                index
+              ]?.captionHighlight,
             fromFrame:
               startFrame,
             toFrame:
@@ -1036,8 +1109,9 @@ const MessageText: React.FC<{
         color: "white",
       }}
     >
-      {attachShortWords(
+      {renderHighlighted(
         span.text,
+        span.highlight,
       )}
     </div>
   );
@@ -1816,7 +1890,7 @@ const EndCard: React.FC =
             ...appear(32, 15),
           }}
         >
-          BEZPŁATNA WYCENA
+          DARMOWA WYCENA
         </div>
 
         <div
@@ -2002,9 +2076,25 @@ export const CoverImage: React.FC =
       );
     }
 
+    /*
+     * Okładka ma własny tekst (brief: maks. 4 słowa) — gdy
+     * copywriter go nie dał, zostaje hook.
+     */
+    const coverText =
+      editData.cover?.trim() ||
+      editData.hook?.trim() ||
+      "";
+
     return (
       <SceneComponent
-        scene={firstScene}
+        scene={{
+          ...firstScene,
+          overlay: coverText
+            ? {
+                text: coverText,
+              }
+            : undefined,
+        }}
         tailFrames={
           TRANSITION_DURATION
         }

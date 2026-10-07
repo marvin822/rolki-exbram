@@ -65,21 +65,20 @@ const OUTPUT_FILE = path.join(
  * Elementy doklejane ZAWSZE, niezależnie od tego, co zwróci model:
  * jedno wezwanie do działania, dane kontaktowe i hasztagi marki.
  */
+/*
+ * Jedno CTA z konkretnymi kanałami — tak jak plansza końcowa
+ * (brief: exbram-rolki-instrukcje-agenta.md, sekcja 5).
+ */
 const CTA_LINE =
-  "Planujesz ogrodzenie? Wyślij nam zdjęcie posesji — przygotujemy bezpłatną wycenę.";
+  "Darmowa wycena: 502 492 009 lub www.exbram.pl";
 
-const CONTACT_LINES = [
-  "www.exbram.pl",
-  "biuro@exbram.pl",
-  "502 492 009",
-];
+/*
+ * Brief: 3-5 hasztagów tematycznych + #exbram na końcu.
+ */
+const BRAND_HASHTAG =
+  "exbram";
 
-const BASE_HASHTAGS = [
-  "ogrodzenia",
-  "EXBRAM",
-];
-
-const MAX_HASHTAGS = 7;
+const MAX_HASHTAGS = 6;
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -202,16 +201,31 @@ const normalizeHashtag = (tag) => {
 const buildHashtagLine = (
   modelHashtags,
 ) => {
-  const all = [
-    ...BASE_HASHTAGS,
-    ...(Array.isArray(
+  const topical = (
+    Array.isArray(
       modelHashtags,
     )
       ? modelHashtags
-      : []),
-  ]
+      : []
+  )
     .map(normalizeHashtag)
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter(
+      (tag) =>
+        tag.toLowerCase() !==
+        `#${BRAND_HASHTAG}`,
+    )
+    .slice(
+      0,
+      MAX_HASHTAGS - 1,
+    );
+
+  const all = [
+    ...topical,
+    normalizeHashtag(
+      BRAND_HASHTAG,
+    ),
+  ];
 
   const seen = new Set();
   const unique = [];
@@ -392,6 +406,75 @@ const main = async () => {
     );
   }
 
+  /*
+   * Opis napisał już copywriter (write-copy.mjs) razem z napisami
+   * na ekran — tu go tylko składamy w plik, bez kolejnego zapytania
+   * do AI. Ścieżka niżej zostaje na wypadek, gdy copywriter
+   * nie zadziałał.
+   */
+  const written =
+    editPlan.copy
+      ?.description;
+
+  if (
+    written?.firstLine &&
+    written?.body
+  ) {
+    const missing =
+      Array.isArray(
+        editPlan.copy.missing,
+      )
+        ? editPlan.copy.missing.filter(
+            Boolean,
+          )
+        : [];
+
+    const fileContent = [
+      written.firstLine.trim(),
+      "",
+      written.body.trim(),
+      "",
+      CTA_LINE,
+      "",
+      buildHashtagLine(
+        written.hashtags,
+      ),
+      "",
+      ...(missing.length > 0
+        ? [
+            "———— DO UZUPEŁNIENIA (usuń przed publikacją) ————",
+            ...missing.map(
+              (item) =>
+                `- ${item}`,
+            ),
+            "",
+          ]
+        : []),
+    ].join("\n");
+
+    fs.mkdirSync(OUTPUT_DIR, {
+      recursive: true,
+    });
+
+    fs.writeFileSync(
+      OUTPUT_FILE,
+      fileContent,
+      "utf8",
+    );
+
+    console.log(
+      `\nOpis od copywritera (typ ${editPlan.copy.type ?? "?"}: ${editPlan.copy.angle ?? ""}):\n`,
+    );
+
+    console.log(fileContent);
+
+    console.log(
+      `Zapisano: ${OUTPUT_FILE}`,
+    );
+
+    return;
+  }
+
   const photoAnalysis = readJson(
     ANALYSIS_FILE,
     [],
@@ -479,8 +562,6 @@ const main = async () => {
     description,
     "",
     CTA_LINE,
-    "",
-    ...CONTACT_LINES,
     "",
     hashtagLine,
     "",

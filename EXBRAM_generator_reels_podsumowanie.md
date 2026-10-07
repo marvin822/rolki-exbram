@@ -75,7 +75,7 @@ output/
 Folder wyjściowy nazywa się tak samo jak źródłowy. Każdy przebieg dokłada nowy
 komplet plików ze wspólnym znacznikiem czasu — nic nie jest nadpisywane.
 
-Okładka to pierwsza scena z hookiem (kompozycja `Cover`) — do ustawienia
+Okładka to pierwsza scena z tekstem okładki od copywritera (kompozycja `Cover`) — do ustawienia
 ręcznie przy publikacji. Jej błąd nie zatrzymuje pipeline'u.
 
 ## 3a. Stan między zestawami
@@ -108,6 +108,7 @@ udało, a kod wyjścia jest niezerowy, gdy cokolwiek padło.
 | 2 | `analyze-video.mjs` | klatki → `video-analysis.json` (ocena całego filmu) |
 | 3 | `analyze-video-detail.mjs` | do 4 kandydatów → 12 klatek szczegółowych każdy → precyzyjne fragmenty w `video-analysis.json` |
 | 4 | `analyze-image.mjs` | zdjęcia → `analysis.json`; zdjęcia + fragmenty → `edit.json` (plan montażu) |
+| 4a | `write-copy.mjs` | gotowy plan + opisy scen → hook i hasła na ekran w `edit.json` |
 | 5 | `normalize-videos.mjs` | filmy → `public/processed/*.mp4` (stabilizacja + skala + 30 fps, bez dźwięku) |
 | 5a | `measure-grade.mjs` | pomiar jasności i nasycenia każdej sceny → `grade.json` (korekta kolorów per scena) |
 | 6 | `select-music.mjs` | `public/music/` → `music.json` (utwór + wykryte tempo i pierwsze uderzenie) |
@@ -180,8 +181,12 @@ droga i niebo liczą się jako `deadSpace`, nawet gdy ładnie wyglądają.
 - **Jedna realizacja na rolkę.** Folder zestawu deklaruje ją wprost, ale reguła
   została jako zabezpieczenie: gdy `takenAt` i opisy pokazują kilka posesji,
   planer wybiera jedną i wypisuje pominięte pliki.
-- Długość: 17–20 s materiału, cała rolka 20–23 s, nigdy powyżej 25 s.
-- 6–8 scen; zdjęcia 3–4 s (mocne do 4,5 s), fragmenty wideo 4–5 s.
+- Długość: **10–25 s całej rolki**, zależnie od ilości mocnego materiału
+  (2–3 mocne ujęcia → ok. 7–11 s materiału, 4–5 → 12–16 s, dużo albo proces →
+  17–21 s). Nie wydłużamy na siłę — krótka rolka częściej jest oglądana do końca.
+  Kod zdejmuje sceny ponad 21 s materiału (od przedostatniej), bo dociąganie
+  cięć do rytmu dokłada kilka klatek.
+- 3–7 scen; zdjęcia 3–4 s (mocne do 4,5 s), fragmenty wideo 4–5 s.
 - Ranking **względny w obrębie zestawu** — otwarcie i zakończenie to ujęcia
   frontalne o najwyższym `productProminence`, nigdy `wide` ani najsłabsze
   z zestawu. Progi bezwzględne nie działają, bo przy ogrodzeniu na murku
@@ -190,20 +195,31 @@ droga i niebo liczą się jako `deadSpace`, nawet gdy ładnie wyglądają.
   i wyłącznie te z `qualityScore ≥ 0.8`.
 - Gdy większość zdjęć ma niski `productProminence`, a są dobre klipy — rolka
   opiera się na wideo.
-- **Napisy** układa planer razem z montażem: `hook` (3–7 słów, maks. 42 znaki)
-  na pierwszą scenę i 2–3 **hasła marketingowe** (`caption`, maks. 40 znaków)
-  na resztę rolki. Hasło NIE opisuje kadru („Furtka lamelowa”), tylko mówi, co
-  ogrodzenie daje: prywatność, styl, precyzja, własna produkcja i montaż,
-  zachęta. Jedno hasło trwa przez 2–3 kolejne sceny — planer wpisuje ten sam
-  tekst w każdą z nich. Zakazane: murek, tabliczki, skrzynki, liczby, terminy,
-  gwarancje, superlatywy. Kod przycina długość (`cleanOverlayText`), zostawia
-  najwyżej 3 hasła i każde tylko w jednym ciągłym odcinku
-  (`normalizeCaptionRuns`). Jednoliterowe słowa są sklejane z następnym
-  twardą spacją.
-- **Pamięć haseł:** ostatnie 40 hooków i haseł trafia do
-  `work/text-history.json` (lokalnie, wspólne dla zestawów) i do promptu jako
-  lista zakazana — bez tego model wracał do tych samych sformułowań, a kolejne
-  rolki na profilu wyglądałyby jak szablon. Usunięcie pliku czyści pamięć.
+- **Napisy, okładkę i opis** pisze osobny krok `write-copy.mjs` („copywriter”,
+  model `gpt-5`), PO ułożeniu montażu. Jego instrukcją jest **brief właściciela
+  [exbram-rolki-instrukcje-agenta.md](exbram-rolki-instrukcje-agenta.md)**,
+  wczytywany przy każdym przebiegu — zmiana briefu (fakty o firmie, ton,
+  zakazane wzorce) działa od następnej rolki bez zmian w kodzie. Kod dokłada
+  zasady pipeline'u, które mają pierwszeństwo: rolka jest już zmontowana,
+  jedynym CTA jest plansza końcowa (ostatni napis nie jest CTA), na ekranie
+  nigdy `[UZUPEŁNIJ]` ani emoji, wynik w JSON.
+- Copywriter wybiera **typ materiału i kąt** (A–H z briefu), pisze hook
+  (scena 1, 3–7 słów) i 2–5 plansz po ≤ 8 słów, każdą na 1–3 kolejne sceny,
+  z jednym słowem kluczowym do wyróżnienia kolorem akcentu. Do tego tekst
+  okładki (≤ 4 słowa), opis i listę brakujących danych (RAL, wymiary…).
+- **Kontrola w kodzie, nie tylko w prompcie:** liczba słów i znaków, czas
+  czytania (0,3 s na słowo + 0,5 s, min. 1,5 s), zakazane wzorce z sekcji 6
+  briefu, puste słowa, fałszywe obietnice (cisza, hałas, wiatr — lamele są
+  ażurowe), pytanie bez „?”, wersaliki, placeholdery i emoji na ekranie,
+  **liczby spoza faktów** (sekcja 2 briefu) i opisów scen, powtórzone słowo
+  między planszami (nazwy produktów wolno powtarzać — to słowa, których
+  szuka klient), parafraza hooka z historii, długość opisu i liczba
+  hasztagów. Przy uwagach propozycja wraca do modelu z ich listą — najwyżej
+  3 próby, potem bierze najlepszą. Błąd kroku nie zatrzymuje rolki: powstaje
+  bez napisów, a opis pisze zapasowa ścieżka `generate-description.mjs`.
+- **Pamięć hooków i haseł:** ostatnie 24 w `work/text-history.json` (lokalnie,
+  wspólne dla zestawów) trafiają do promptu — hooka nie wolno powtórzyć ani
+  sparafrazować. Usunięcie pliku czyści pamięć.
 - **Serie zdjęć:** zdjęcia zrobione w odstępie ≤ 4 s (`takenAt`) to prawie ten
   sam kadr. Kod nie pozwala postawić ich obok siebie — przenosi drugie dalej
   (bez ruszania zakończenia), a gdy się nie da, pomija je.
@@ -231,8 +247,8 @@ droga i niebo liczą się jako `deadSpace`, nawet gdy ładnie wyglądają.
   każdym cięciu. Rozmyte pasy zostają czyste.
 - **Znak wodny** w lewym dolnym rogu pasa — prawą krawędź zajmuje kolumna
   przycisków. Jedna wersja rolki pasuje do obu platform.
-- Plansza końcowa: 3,5 s, logo, „Ogrodzenia, które robią różnicę",
-  „BEZPŁATNA WYCENA" + telefon, `www.exbram.pl` — wszystko powyżej 62%
+- Plansza końcowa = **jedyne CTA rolki**: 3,5 s, logo, „Ogrodzenia, które robią
+  różnicę", „DARMOWA WYCENA" + telefon, `www.exbram.pl` (tylko strona główna, bez linków do podstron) — wszystko powyżej 62%
   wysokości kadru, żeby nie wchodziło pod opis rolki.
 - **Korekta kolorów per scena:** `measure-grade.mjs` mierzy FFmpegiem (`signalstats`)
   rozpiętość jasności (10.–90. percentyl), średnią jasność i nasycenie każdego
@@ -249,16 +265,20 @@ droga i niebo liczą się jako `deadSpace`, nawet gdy ładnie wyglądają.
 
 ## 9. Opis do rolki
 
-`output/opis-*.txt` powstaje z tych samych analiz (bez ponownego oglądania
-zdjęć) i ma stałą strukturę:
+`output/opis-*.txt` pisze copywriter według sekcji 5 briefu, a
+`generate-description.mjs` tylko składa plik (bez drugiego zapytania do AI):
 
-1. **Hook** — żywe zdanie budujące ciekawość; suche otwarcia typu
-   „Prezentujemy…" są zakazane
-2. **Konkrety** — 1–2 zdania, 2–3 najbardziej charakterystyczne cechy, tylko to,
-   co potwierdza analiza
-3. **Korzyść** — co realizacja daje właścicielom
-4. **CTA** + dane kontaktowe (doklejane w kodzie, nie przez model)
-5. **Hasztagi** — `#ogrodzenia` i `#EXBRAM` na stałe + 3–6 od modelu, limit 7
+1. **Pierwsza linia** — drugi hook, do ~120 znaków (widać ją przed „…więcej”)
+2. **2–4 krótkie akapity konkretów** — styl, produkt, materiał, dla kogo
+3. **CTA** — doklejane w kodzie: „Darmowa wycena: 502 492 009 lub
+   www.exbram.pl”
+4. **Hasztagi** — 3–5 tematycznych od modelu + `#exbram` na końcu
+5. **DO UZUPEŁNIENIA** — dane, których copywriter nie mógł znać (RAL, wymiary,
+   lokalizacja), pod wyraźną kreską: do uzupełnienia albo usunięcia przed
+   publikacją
+
+Gdy copywriter nie zadziałał, `generate-description.mjs` pisze opis sam
+(stara ścieżka, `gpt-5-mini`).
 
 ---
 

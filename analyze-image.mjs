@@ -64,120 +64,14 @@ const MIN_VIDEO_FRAGMENT_QUALITY = 0.8;
 const ANALYSIS_SCHEMA_VERSION = 5;
 
 /*
- * Napisy na ekranie. Limity trzymają tekst w dwóch liniach
- * przy rozmiarach fontu z Composition.tsx — model potrafi je
- * przekroczyć, więc cleanOverlayText przycina na granicy słowa.
- */
-const HOOK_MAX_CHARS = 42;
-
-const CAPTION_MAX_CHARS = 40;
-
-/*
- * Najwięcej różnych haseł marketingowych w jednej rolce — więcej
- * nie da się przeczytać w ~20 s, a każde ma trwać kilka ujęć.
- */
-const MAX_CAPTION_MESSAGES = 3;
-
-/*
- * Pamięć haseł z poprzednich rolek.
- *
- * Model chętnie wraca do tych samych sformułowań, a na profilu
- * firmy kolejne rolki z identycznym hookiem wyglądają jak szablon.
- * Ostatnie hooki i hasła trafiają do promptu jako lista zakazana.
- * Plik leży w work/ (lokalnie, poza gitem) — wspólny dla zestawów.
- */
-const TEXT_HISTORY_FILE =
-  path.join(
-    process.cwd(),
-    "work",
-    "text-history.json",
-  );
-
-const TEXT_HISTORY_LIMIT = 40;
-
-const readTextHistory = () => {
-  try {
-    const stored = JSON.parse(
-      fs.readFileSync(
-        TEXT_HISTORY_FILE,
-        "utf8",
-      ),
-    );
-
-    return Array.isArray(stored)
-      ? stored.filter(
-          (item) =>
-            typeof item ===
-            "string",
-        )
-      : [];
-  } catch {
-    return [];
-  }
-};
-
-const formatTextHistory = () => {
-  const history =
-    readTextHistory();
-
-  return history.length > 0
-    ? history
-        .map(
-          (text) =>
-            `- ${text}`,
-        )
-        .join("\n")
-    : "(brak — to pierwsza rolka)";
-};
-
-const rememberTexts = (
-  plan,
-) => {
-  const fresh = [
-    plan.hook,
-    ...plan.scenes.map(
-      (scene) =>
-        scene.caption,
-    ),
-  ].filter(Boolean);
-
-  const merged = [
-    ...new Set([
-      ...fresh,
-      ...readTextHistory(),
-    ]),
-  ].slice(
-    0,
-    TEXT_HISTORY_LIMIT,
-  );
-
-  fs.mkdirSync(
-    path.dirname(
-      TEXT_HISTORY_FILE,
-    ),
-    {
-      recursive: true,
-    },
-  );
-
-  fs.writeFileSync(
-    TEXT_HISTORY_FILE,
-    `${JSON.stringify(
-      merged,
-      null,
-      2,
-    )}\n`,
-    "utf8",
-  );
-};
-
-/*
  * Zdjęcia zrobione kilka sekund po sobie to zwykle prawie ten
  * sam kadr (seria z telefonu). Model widzi tylko opisy, więc
  * potrafi postawić je obok siebie — w rolce wygląda to jak
  * zacięcie. Pilnujemy tego w kodzie.
  */
 const BURST_SECONDS = 4;
+
+const MAX_MATERIAL_SECONDS = 21;
 
 const parseTakenAt = (
   value,
@@ -332,75 +226,6 @@ const separateBurstShots = (
       index -= 1;
     }
   }
-};
-
-/*
- * Hasło trwające przez kilka scen to ten sam caption na kolejnych
- * scenach — Composition.tsx skleja je w jeden napis. Po rozdzieleniu
- * serii zdjęć scena z hasłem mogła odjechać dalej, więc to samo hasło
- * pokazałoby się drugi raz. Zostawiamy tylko pierwszy ciągły odcinek
- * każdego hasła i najwyżej MAX_CAPTION_MESSAGES różnych haseł.
- */
-const normalizeCaptionRuns = (
-  scenes,
-) => {
-  const used = new Set();
-
-  let previous = "";
-
-  for (const scene of scenes) {
-    let text =
-      scene.caption ?? "";
-
-    const continuesRun =
-      text !== "" &&
-      text === previous;
-
-    if (
-      text &&
-      !continuesRun &&
-      (used.has(text) ||
-        used.size >=
-          MAX_CAPTION_MESSAGES)
-    ) {
-      text = "";
-    }
-
-    if (text) {
-      used.add(text);
-    }
-
-    scene.caption = text;
-
-    previous = text;
-  }
-};
-
-const cleanOverlayText = (
-  value,
-  maxChars,
-) => {
-  const text = String(
-    value ?? "",
-  )
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/[.!]+$/, "");
-
-  if (
-    text.length <= maxChars
-  ) {
-    return text;
-  }
-
-  const cut = text
-    .slice(0, maxChars + 1)
-    .replace(/\s+\S*$/, "");
-
-  return cut.replace(
-    /[,;:–-]+$/,
-    "",
-  );
 };
 
 const getMimeType = (
@@ -1112,15 +937,19 @@ ${JSON.stringify(
 
 CEL DŁUGOŚCI:
 
-- cała rolka ma trwać 20-23 sekundy i NIGDY więcej niż 25 sekund;
-  plansza końcowa to około 3 sekundy, więc materiał przed planszą
-  to około 17-20 sekund,
-- preferuj 6-8 scen (średnie ujęcie ok. 3-3.5 s, żeby wyjść na 17-20 s),
-- jeśli dostępnych jest wystarczająco dużo dobrych materiałów, wykorzystaj 6-8 różnych materiałów,
-- ujęcia mają być trochę dłuższe i spokojniejsze — daj widzowi obejrzeć kadr,
-- nie skracaj rolki tylko dlatego, że można użyć mniejszej liczby scen,
-- jednocześnie nigdy nie dodawaj słabego materiału wyłącznie po to, żeby osiągnąć długość,
-- jakość i atrakcyjność są ważniejsze niż dokładne osiągnięcie czasu.
+- cała rolka trwa 10-25 sekund — długość DOBIERZ DO ILOŚCI MOCNEGO
+  MATERIAŁU; plansza końcowa to 3,5 s, więc materiał przed nią
+  to 6,5-21,5 s,
+- mało mocnych ujęć (2-3) → krótka rolka, ok. 7-11 s materiału
+  w 3 scenach; krótka rolka częściej jest oglądana do końca
+  i zapętlana, więc to nie jest gorsza wersja,
+- średnio (4-5 mocnych ujęć) → ok. 12-16 s materiału w 4-5 scenach,
+- dużo mocnego materiału albo proces (montaż, produkcja, ruch bramy
+  na filmie) → ok. 17-21 s materiału w 6-7 scenach,
+- nigdy nie dodawaj słabego ani powtarzającego się materiału tylko po to,
+  żeby wydłużyć rolkę — najkrótsza wersja, która pokazuje realizację,
+  jest najlepsza,
+- jakość i atrakcyjność są ważniejsze niż długość.
 
 JEDNA REALIZACJA (sprawdź to NAJPIERW):
 
@@ -1206,62 +1035,6 @@ RÓŻNORODNOŚĆ:
 - pokazuj zarówno całość, jak i detale,
 - priorytetem jest produkt: ogrodzenie, brama, furtka, panele, detale wykonania.
 
-NAPISY NA EKRANIE (rolki ogląda się głównie bez dźwięku):
-
-- hook — jedno krótkie hasło na pierwsze ~2 sekundy rolki, pokazywane
-  na pierwszej scenie. Ma zatrzymać przewijanie: budzi ciekawość albo
-  mówi wprost, co widz zaraz zobaczy.
-  3-7 słów, maksymalnie ${HOOK_MAX_CHARS} znaków, bez kropki na końcu
-  i bez wykrzyknika. Zakazane: "Prezentujemy", "Kolejna realizacja",
-  "Zobacz", nazwa firmy (logo jest w kadrze), superlatywy
-  ("najlepsze", "idealne", "wymarzone").
-  Możliwe KIERUNKI (opisane słowami, nie gotowe zdania — hook ułóż
-  sam, od zera, z tego, co wyróżnia TĘ realizację): nazwanie efektu
-  dla domu, najbardziej charakterystyczny element produktu, mała
-  zagadka o detalu, kontrast przed/po, pytanie do widza.
-  Nie używaj zwrotów "w jednym rytmie", "robi różnicę", "robi
-  wrażenie" — są już na planszy końcowej albo powtarzały się
-  w poprzednich rolkach.
-- caption — HASŁA MARKETINGOWE prowadzące widza przez rolkę po hooku.
-  To NIE są podpisy zdjęć. Nie nazywaj tego, co widać w kadrze
-  ("Furtka lamelowa", "Przęsło lamelowe", "Pionowe lamele" są ZŁE —
-  widz sam widzi, że to furtka). Hasło mówi, co ogrodzenie DAJE
-  albo jakie jest: efekt dla domu, prywatność, spokój, bezpieczeństwo,
-  nowoczesny charakter, porządek i precyzja wykonania, dopasowanie
-  do elewacji, trwałość na lata.
-  Firma sama PRODUKUJE i MONTUJE ogrodzenia — możesz się do tego
-  odwołać ("od projektu po montaż", "z własnej produkcji").
-- ułóż 2-3 RÓŻNE hasła na całą rolkę, które razem tworzą krótką
-  historię, np. efekt → korzyść → zachęta. Ostatnie hasło może
-  łagodnie zapowiadać planszę końcową (że widz też może mieć takie
-  ogrodzenie), ale bez telefonu i bez "zadzwoń" — CTA jest na planszy,
-- jedno hasło TRWA PRZEZ KILKA KOLEJNYCH SCEN: wpisz DOKŁADNIE ten sam
-  tekst w caption każdej z nich (zwykle 2-3 sceny, ok. 6-10 s) — dzięki
-  temu widz zdąży przeczytać, a tekst nie miga przy każdym cięciu,
-- pierwsza scena ma caption "" (na niej jest hook); od drugiej sceny
-  hasła powinny pokrywać prawie całą rolkę — najwyżej JEDNA scena
-  z rzędu bez hasła,
-- 3-7 słów, maksymalnie ${CAPTION_MAX_CHARS} znaków, bez kropki
-  i bez wykrzyknika, wielka litera tylko na początku,
-- tematem jest wyłącznie OGRODZENIE (metal: przęsła, brama, furtka,
-  lamele). Nie pisz o tabliczkach, numerach domu, skrzynkach na
-  listy, domofonach, napisach, murku, słupkach murowanych ani o domu
-  jako takim,
-- hasło nie może obiecywać rzeczy, których nie da się sprawdzić:
-  bez liczb, terminów ("w 2 dni"), gwarancji, cen, kodów RAL, nazw
-  materiałów (stal, aluminium) i funkcji (automat, pilot), których
-  analiza nie wymienia wprost; bez superlatyw ("najlepsze",
-  "idealne"),
-- TEMATY do wyboru (same tematy — sformułowanie ułóż sam, pod to,
-  co wyróżnia TĘ realizację): prywatność; dopasowanie do architektury;
-  precyzja wykonania; spójność bramy, furtki i przęseł; własna
-  produkcja i montaż; trwałość; zachęta dla widza,
-- hook i hasła mają brzmieć świeżo — NIE używaj haseł z poprzednich
-  rolek ani ich parafraz (lista niżej).
-
-HASŁA Z POPRZEDNICH ROLEK (nie powtarzaj):
-${formatTextHistory()}
-
 WAŻNE:
 
 1. Możesz wybierać WYŁĄCZNIE materiały znajdujące się na przekazanej liście.
@@ -1271,17 +1044,16 @@ WAŻNE:
 5. Nigdy nie twórz własnego fragmentId.
 6. Dla filmu nie zmieniaj czasu rozpoczęcia ani długości wybranego fragmentu.
 7. Nie dodawaj żadnych innych plików.
-8. Napisy wyłącznie w polach hook i caption — zgodnie z sekcją NAPISY.
+8. Nie dodawaj napisów — układa je osobny krok (write-copy.mjs).
 9. Nie dodawaj CTA (plansza końcowa ma je na stałe).
 10. Nie dodawaj muzyki.
 11. Nie wymyślaj treści, których nie potwierdza analiza materiału.
 12. Pole reason krótko wyjaśnia decyzję montażową.
 13. duration podawaj w sekundach.
 14. Dla zdjęć wybieraj zwykle 3-4 sekundy.
-15. Preferuj 6-8 scen, jeżeli materiał na to pozwala.
-16. Całość materiału przed planszą końcową powinna być zwykle blisko 17-20 sekund (cała rolka 20-23 s, max 25 s).
-17. Jeśli do osiągnięcia 17-20 sekund potrzebny jest dodatkowy dobry materiał, wybierz go.
-18. Jeśli dodatkowy materiał jest wyraźnie słaby, pomiń go zamiast sztucznie wydłużać rolkę.
+15. Liczba scen: 3-7, zależnie od ilości mocnego materiału (sekcja CEL DŁUGOŚCI).
+16. Cała rolka 10-25 s razem z planszą końcową (3,5 s) — materiał przed planszą 6,5-21,5 s.
+17. Jeśli dodatkowy materiał jest słaby albo prawie taki sam jak już wybrany, pomiń go zamiast wydłużać rolkę.
 
 Zwróć wyłącznie JSON zgodny ze schematem.
               `,
@@ -1336,10 +1108,6 @@ Zwróć wyłącznie JSON zgodny ze schematem.
                     reason: {
                       type: "string",
                     },
-
-                    caption: {
-                      type: "string",
-                    },
                   },
 
                   required: [
@@ -1348,19 +1116,13 @@ Zwróć wyłącznie JSON zgodny ze schematem.
                     "duration",
                     "start",
                     "reason",
-                    "caption",
                   ],
                 },
-              },
-
-              hook: {
-                type: "string",
               },
             },
 
             required: [
               "scenes",
-              "hook",
             ],
           },
         },
@@ -1445,12 +1207,6 @@ Zwróć wyłącznie JSON zgodny ze schematem.
 
         reason:
           scene.reason,
-
-        caption:
-          cleanOverlayText(
-            scene.caption,
-            CAPTION_MAX_CHARS,
-          ),
       });
 
       continue;
@@ -1497,12 +1253,6 @@ Zwróć wyłącznie JSON zgodny ze schematem.
 
       reason:
         scene.reason,
-
-      caption:
-        cleanOverlayText(
-          scene.caption,
-          CAPTION_MAX_CHARS,
-        ),
     });
   }
 
@@ -1606,21 +1356,37 @@ Zwróć wyłącznie JSON zgodny ze schematem.
   );
 
   /*
-   * Na pierwszej scenie stoi hook — podpis by z nim kolidował,
-   * więc czyścimy go niezależnie od tego, co zwrócił model.
+   * Cała rolka ma się zmieścić w 25 s razem z planszą (3,5 s).
+   * Limit materiału jest niższy niż 21,5 s, bo dociąganie cięć
+   * do rytmu muzyki potrafi dodać po kilka klatek na scenę.
+   * Nadmiar zdejmujemy od przedostatniej sceny — otwarcie
+   * i zakończenie planer wybiera świadomie.
    */
-  uniqueScenes[0].caption = "";
+  const totalSeconds = () =>
+    uniqueScenes.reduce(
+      (total, scene) =>
+        total +
+        scene.duration,
+      0,
+    );
 
-  normalizeCaptionRuns(
-    uniqueScenes,
-  );
+  while (
+    totalSeconds() >
+      MAX_MATERIAL_SECONDS &&
+    uniqueScenes.length > 3
+  ) {
+    const [removed] =
+      uniqueScenes.splice(
+        uniqueScenes.length - 2,
+        1,
+      );
+
+    console.log(
+      `Pominięto ${removed.fragmentId || removed.file} — rolka przekroczyłaby 25 s.`,
+    );
+  }
 
   return {
-    hook: cleanOverlayText(
-      plan.hook,
-      HOOK_MAX_CHARS,
-    ),
-
     scenes:
       uniqueScenes,
   };
@@ -1787,8 +1553,6 @@ const main = async () => {
       videos:
         validVideoAnalysis,
     });
-
-  rememberTexts(editPlan);
 
   /*
    * Nazwa zestawu jedzie w planie montażu, bo Remotion importuje
