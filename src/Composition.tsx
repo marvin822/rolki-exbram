@@ -7,7 +7,9 @@ import {
   useCurrentFrame,
   Img,
   OffthreadVideo,
+  Still,
   interpolate,
+  spring,
   Easing,
 } from "remotion";
 import {
@@ -15,11 +17,13 @@ import {
   linearTiming,
 } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
+import { loadFont } from "@remotion/google-fonts/Montserrat";
 
 import editPlan from "../edit.json";
 import analysis from "../analysis.json";
 import videoAnalysis from "../video-analysis.json";
 import musicSelection from "../music.json";
+import gradeData from "../grade.json";
 
 type Props = {};
 
@@ -55,11 +59,22 @@ type EditScene = {
   duration: number;
   start: number;
   reason: string;
+  caption?: string;
 };
 
 type EditPlan = {
   set?: string;
+  hook?: string;
   scenes: EditScene[];
+};
+
+/*
+ * Napis na scenie: hook na pierwszej, krótki podpis na kilku
+ * kolejnych. Treść układa planer (analyze-image.mjs).
+ */
+type SceneOverlay = {
+  text: string;
+  variant: "hook" | "caption";
 };
 
 type Scene =
@@ -67,6 +82,8 @@ type Scene =
       type: "photo";
       src: string;
       duration: number;
+      overlay?: SceneOverlay;
+      grade: string;
     }
   | {
       type: "video";
@@ -74,13 +91,49 @@ type Scene =
       originalFile: string;
       duration: number;
       start: number;
+      overlay?: SceneOverlay;
+      grade: string;
     };
+
+type MusicSelection = {
+  file: string | null;
+  beat?: {
+    bpm: number;
+    offset: number;
+    confidence: number;
+  } | null;
+};
 
 const FPS = 30;
 
-const TRANSITION_DURATION = 15;
+/*
+ * Krótkie przenikanie między scenami — w rolkach dłuższe fade'y
+ * wyglądają ospale (6 scen x 0.5 s to 3 s rozmycia). Na planszę
+ * końcową wchodzimy wolniej, bo to zmiana z ciemnego kadru na jasny.
+ */
+const TRANSITION_DURATION = 6;
 
-const END_CARD_DURATION = 3;
+const END_TRANSITION_DURATION = 12;
+
+const END_CARD_DURATION = 3.5;
+
+const BRAND_RED = "#a31f22";
+
+const PHONE_NUMBER =
+  "502 492 009";
+
+const { fontFamily: FONT_FAMILY } =
+  loadFont("normal", {
+    weights: [
+      "600",
+      "700",
+      "800",
+    ],
+    subsets: [
+      "latin",
+      "latin-ext",
+    ],
+  });
 
 /*
  * Muzyka w tle.
@@ -95,10 +148,14 @@ const END_CARD_DURATION = 3;
  * nie konkuruje z muzyką.
  */
 const MUSIC_TRACK = (
-  musicSelection as {
-    file: string | null;
-  }
+  musicSelection as MusicSelection
 ).file;
+
+const MUSIC_BEAT = MUSIC_TRACK
+  ? (
+      musicSelection as MusicSelection
+    ).beat ?? null
+  : null;
 
 const MUSIC_VOLUME = 0.25;
 
@@ -151,11 +208,72 @@ const BACKDROP_BLUR = 45;
 const BACKDROP_BRIGHTNESS = 0.62;
 
 /*
- * Znak wodny — logo w prawym dolnym rogu PASA Z TREŚCIĄ,
+ * Korekta kolorów ostrego materiału (zdjęcia i filmy).
+ *
+ * Każda scena dostaje własną korektę z grade.json — liczy ją
+ * measure-grade.mjs z pomiaru jasności i nasycenia ujęcia, żeby
+ * płaskie i ciemne kadry dociągnąć do wspólnego wzorca, a już
+ * dobre zostawić prawie bez zmian. Tam też są bezpieczniki
+ * (m.in. łączne nasycenie ±6%, żeby antracyt nie niebieszczał).
+ *
+ * DEFAULT_GRADE to awaryjna korekta dla sceny bez pomiaru:
+ * umiarkowany kontrast z lekkim rozjaśnieniem, a nasycenie
+ * odjęte tyle, ile dokłada sam kontrast — przy saturate(1.12)
+ * antracyt (RAL 7016) wyraźnie niebieszczał (B−R z 52 do 65).
+ *
+ * Logo, napisy i rozmyte tło leżą poza filtrem, więc kolory
+ * marki się nie zmieniają.
+ */
+type Grade = {
+  contrast: number;
+  brightness: number;
+  saturate: number;
+};
+
+const DEFAULT_GRADE: Grade = {
+  contrast: 1.08,
+  brightness: 1.03,
+  saturate: 0.97,
+};
+
+const measuredGrades = (
+  gradeData as {
+    scenes?: Record<
+      string,
+      Grade
+    >;
+  }
+).scenes ?? {};
+
+/*
+ * Klucz jak w measure-grade.mjs: plik + początek fragmentu.
+ */
+const getGradeFilter = (
+  file: string,
+  start: number,
+) => {
+  const grade =
+    measuredGrades[
+      `${file}@${Number(start) || 0}`
+    ] ?? DEFAULT_GRADE;
+
+  return (
+    `contrast(${grade.contrast}) ` +
+    `brightness(${grade.brightness}) ` +
+    `saturate(${grade.saturate})`
+  );
+};
+
+/*
+ * Znak wodny — logo w lewym dolnym rogu PASA Z TREŚCIĄ,
  * nie całego kadru 1080x1920.
  *
  * W rogu canvasu wylądowałoby na rozmytym tle, gdzie wygląda jak
  * doklejone, a na Instagramie dolny pas kadru zasłania interfejs.
+ * Lewa strona, bo prawą krawędź od ~55% wysokości zajmuje kolumna
+ * przycisków (polub / komentarz / udostępnij) — na Facebooku
+ * i Instagramie w tym samym miejscu, więc jedna wersja wystarcza.
+ * Górę pasa zajmują napisy.
  *
  * Bez cienia i mocno przezroczyste — ma być delikatną sygnaturą,
  * a nie elementem konkurującym z ogrodzeniem.
@@ -274,9 +392,35 @@ const getProcessedVideoPath = (
   return `processed/${baseName}.mp4`;
 };
 
-const scenes: Scene[] =
+/*
+ * Napis dla sceny: hook z planu na pierwszej, podpis (caption)
+ * na tych, którym planer go dał. Pusty tekst = czysty kadr.
+ */
+const getSceneOverlay = (
+  scene: EditScene,
+  index: number,
+): SceneOverlay | undefined => {
+  const text =
+    index === 0
+      ? editData.hook?.trim()
+      : scene.caption?.trim();
+
+  if (!text) {
+    return undefined;
+  }
+
+  return {
+    text,
+    variant:
+      index === 0
+        ? "hook"
+        : "caption",
+  };
+};
+
+const plannedScenes: Scene[] =
   editData.scenes.map(
-    (scene) => {
+    (scene, index) => {
       const extension =
         scene.file
           .split(".")
@@ -287,6 +431,12 @@ const scenes: Scene[] =
         extension === "mp4" ||
         extension === "mov" ||
         extension === "webm";
+
+      const overlay =
+        getSceneOverlay(
+          scene,
+          index,
+        );
 
       if (isVideo) {
         return {
@@ -301,6 +451,12 @@ const scenes: Scene[] =
             scene.duration,
           start:
             scene.start,
+          overlay,
+          grade:
+            getGradeFilter(
+              scene.file,
+              scene.start,
+            ),
         };
       }
 
@@ -309,33 +465,182 @@ const scenes: Scene[] =
         src: `media/${SET_NAME}/${scene.file}`,
         duration:
           scene.duration,
+        overlay,
+        grade:
+          getGradeFilter(
+            scene.file,
+            0,
+          ),
       };
     },
+  );
+
+/*
+ * Przejście PO danej scenie: między scenami krótkie, przed
+ * planszą końcową dłuższe.
+ */
+const getTailFrames = (
+  index: number,
+  sceneCount: number,
+) => {
+  return index <
+    sceneCount - 1
+    ? TRANSITION_DURATION
+    : END_TRANSITION_DURATION;
+};
+
+/*
+ * Cięcia w rytm muzyki.
+ *
+ * select-music.mjs wykrywa tempo i moment pierwszego uderzenia
+ * podkładu. Muzyka gra od klatki 0, więc uderzenia leżą na
+ * offset + k * (60 / bpm) sekund osi czasu rolki.
+ *
+ * Każde cięcie przesuwamy na najbliższe uderzenie tak, żeby
+ * ŚRODEK przejścia wypadł na beat. Zmiana długości sceny jest
+ * ograniczona — plan AI zostaje praktycznie nienaruszony,
+ * a przy braku wykrytego rytmu nic się nie przesuwa.
+ *
+ * Fragment wideo może się wydłużyć mniej niż zdjęcie: dalej
+ * leci już materiał spoza wybranego przez AI fragmentu.
+ */
+const MAX_BEAT_SHRINK = 0.5;
+const MAX_PHOTO_BEAT_GROW = 0.5;
+const MAX_VIDEO_BEAT_GROW = 0.2;
+const MIN_SCENE_SECONDS = 2;
+
+const snapScenesToBeat = (
+  input: Scene[],
+): Scene[] => {
+  if (
+    !MUSIC_BEAT ||
+    !(MUSIC_BEAT.bpm > 0)
+  ) {
+    return input;
+  }
+
+  const interval =
+    60 / MUSIC_BEAT.bpm;
+
+  let elapsedFrames = 0;
+
+  return input.map(
+    (scene, index) => {
+      const plannedFrames =
+        durationInFrames(
+          scene.duration,
+        );
+
+      const halfTail =
+        getTailFrames(
+          index,
+          input.length,
+        ) / 2;
+
+      const plannedMid =
+        (elapsedFrames +
+          plannedFrames +
+          halfTail) /
+        FPS;
+
+      const nearest =
+        Math.round(
+          (plannedMid -
+            MUSIC_BEAT.offset) /
+            interval,
+        );
+
+      const maxGrow =
+        scene.type === "video"
+          ? MAX_VIDEO_BEAT_GROW
+          : MAX_PHOTO_BEAT_GROW;
+
+      let bestFrames =
+        plannedFrames;
+
+      let bestDistance =
+        Infinity;
+
+      for (const k of [
+        nearest - 1,
+        nearest,
+        nearest + 1,
+      ]) {
+        const beatTime =
+          MUSIC_BEAT.offset +
+          k * interval;
+
+        const frames =
+          Math.round(
+            beatTime * FPS -
+              halfTail,
+          ) - elapsedFrames;
+
+        const delta =
+          (frames -
+            plannedFrames) /
+          FPS;
+
+        if (
+          delta <
+            -MAX_BEAT_SHRINK ||
+          delta > maxGrow ||
+          frames <
+            MIN_SCENE_SECONDS *
+              FPS
+        ) {
+          continue;
+        }
+
+        if (
+          Math.abs(delta) <
+          bestDistance
+        ) {
+          bestDistance =
+            Math.abs(delta);
+
+          bestFrames = frames;
+        }
+      }
+
+      elapsedFrames +=
+        bestFrames;
+
+      return {
+        ...scene,
+        duration:
+          bestFrames / FPS,
+      };
+    },
+  );
+};
+
+const scenes: Scene[] =
+  snapScenesToBeat(
+    plannedScenes,
   );
 
 /*
  * TransitionSeries nakłada przejścia
  * pomiędzy scenami.
  *
- * Każda scena poza ostatnią dostaje
- * dodatkowe 15 klatek, które są następnie
- * kompensowane przez przejście.
+ * Każda scena dostaje dodatkowe klatki
+ * przejścia, które są następnie
+ * kompensowane przez nakładkę przejścia
+ * (ostatnia — przejścia na planszę).
  *
  * Dzięki temu rzeczywisty czas całej
  * części materiałowej odpowiada sumie
- * czasów podanych przez AI.
+ * czasów scen.
  */
 const getSequenceDurationInFrames = (
   duration: number,
-  hasNextScene: boolean,
+  tailFrames: number,
 ) => {
   return (
     durationInFrames(
       duration,
-    ) +
-    (hasNextScene
-      ? TRANSITION_DURATION
-      : 0)
+    ) + tailFrames
   );
 };
 
@@ -360,26 +665,35 @@ const getTotalDurationInFrames =
       getMediaDurationInFrames() +
       durationInFrames(
         END_CARD_DURATION,
-      ) +
-      2
+      )
     );
   };
 
 export const MyComposition =
   () => {
     return (
-      <Composition
-        id="MyComp"
-        component={
-          MyComponent
-        }
-        durationInFrames={
-          getTotalDurationInFrames()
-        }
-        fps={FPS}
-        width={1080}
-        height={1920}
-      />
+      <>
+        <Composition
+          id="MyComp"
+          component={
+            MyComponent
+          }
+          durationInFrames={
+            getTotalDurationInFrames()
+          }
+          fps={FPS}
+          width={1080}
+          height={1920}
+        />
+        <Still
+          id="Cover"
+          component={
+            CoverImage
+          }
+          width={1080}
+          height={1920}
+        />
+      </>
     );
   };
 
@@ -399,7 +713,7 @@ const Watermark: React.FC =
         style={{
           position:
             "absolute",
-          right:
+          left:
             WATERMARK_MARGIN,
           bottom:
             WATERMARK_MARGIN,
@@ -424,14 +738,196 @@ const Watermark: React.FC =
     );
   };
 
+/*
+ * Napisy na ekranie — u góry PASA Z TREŚCIĄ.
+ *
+ * Instagram i Facebook zasłaniają górne ~14% kadru (nagłówek)
+ * i dolne ~35% (opis, nazwa konta, przyciski). Góra pasa 4:5
+ * zaczyna się na 285 px (15%), więc napis tuż pod jej krawędzią
+ * jest w strefie bezpiecznej, a na zdjęciu przykrywa zwykle dach
+ * albo niebo, nie ogrodzenie — kadrowanie i tak spycha metal
+ * do środka pasa.
+ *
+ * Rozmyte pasy nad i pod treścią zostają czyste: górny leży pod
+ * nagłówkiem aplikacji, dolny pod opisem.
+ */
+const TEXT_INSET = 56;
+
+const HOOK_SHADOW =
+  "0 4px 18px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.5)";
+
+const SceneText: React.FC<{
+  overlay: SceneOverlay;
+  sceneFrames: number;
+  isStatic?: boolean;
+}> = ({
+  overlay,
+  sceneFrames,
+  isStatic = false,
+}) => {
+  const frame =
+    useCurrentFrame();
+
+  const isHook =
+    overlay.variant === "hook";
+
+  const delay = isHook
+    ? 3
+    : 6;
+
+  const enter = isStatic
+    ? 1
+    : spring({
+        frame:
+          frame - delay,
+        fps: FPS,
+        durationInFrames: 14,
+        config: {
+          damping: 200,
+        },
+      });
+
+  /*
+   * Napis znika tuż przed przejściem, żeby dwa napisy nie
+   * przenikały się w trakcie zmiany sceny.
+   */
+  const exit = isStatic
+    ? 1
+    : interpolate(
+        frame,
+        [
+          sceneFrames - 8,
+          sceneFrames - 1,
+        ],
+        [1, 0],
+        {
+          extrapolateLeft:
+            "clamp",
+          extrapolateRight:
+            "clamp",
+        },
+      );
+
+  const visibility =
+    enter * exit;
+
+  const offsetY =
+    (1 - enter) * 26;
+
+  if (isHook) {
+    const fontSize =
+      overlay.text.length <= 26
+        ? 78
+        : 66;
+
+    return (
+      <>
+        <div
+          style={{
+            position:
+              "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "48%",
+            background:
+              "linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0) 100%)",
+            opacity:
+              visibility,
+          }}
+        />
+
+        <div
+          style={{
+            position:
+              "absolute",
+            top: TEXT_INSET,
+            left: TEXT_INSET,
+            right: TEXT_INSET,
+            display: "flex",
+            gap: 26,
+            opacity:
+              visibility,
+            transform: `translateY(${offsetY}px)`,
+          }}
+        >
+          <div
+            style={{
+              width: 10,
+              flexShrink: 0,
+              backgroundColor:
+                BRAND_RED,
+              transform: `scaleY(${enter})`,
+              transformOrigin:
+                "top",
+            }}
+          />
+
+          <div
+            style={{
+              fontFamily:
+                FONT_FAMILY,
+              fontWeight: 800,
+              fontSize,
+              lineHeight: 1.12,
+              textWrap:
+                "balance",
+              color: "white",
+              textShadow:
+                HOOK_SHADOW,
+            }}
+          >
+            {overlay.text}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        position:
+          "absolute",
+        top: TEXT_INSET,
+        left: TEXT_INSET,
+        maxWidth:
+          CANVAS_WIDTH -
+          2 * TEXT_INSET,
+        opacity:
+          visibility,
+        transform: `translateX(${-offsetY}px)`,
+        backgroundColor:
+          "rgba(15,15,16,0.66)",
+        borderLeft: `8px solid ${BRAND_RED}`,
+        padding:
+          "16px 28px",
+        fontFamily:
+          FONT_FAMILY,
+        fontWeight: 700,
+        fontSize: 46,
+        lineHeight: 1.18,
+        textWrap: "balance",
+        color: "white",
+      }}
+    >
+      {overlay.text}
+    </div>
+  );
+};
+
 const FramedMedia: React.FC<{
   aspect?: ContentAspect;
   backdrop: React.ReactNode;
   children: React.ReactNode;
+  overlay?: React.ReactNode;
+  grade: string;
 }> = ({
   aspect,
   backdrop,
   children,
+  overlay,
+  grade,
 }) => {
   const contentHeight =
     getContentHeight(aspect);
@@ -473,9 +969,17 @@ const FramedMedia: React.FC<{
               "relative",
           }}
         >
-          {children}
+          <AbsoluteFill
+            style={{
+              filter: grade,
+            }}
+          >
+            {children}
+          </AbsoluteFill>
 
           <Watermark />
+
+          {overlay}
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
@@ -554,9 +1058,15 @@ const getFramingFocusY = (
 const PhotoScene: React.FC<{
   src: string;
   duration: number;
+  tailFrames: number;
+  overlay?: React.ReactNode;
+  grade: string;
 }> = ({
   src,
   duration,
+  tailFrames,
+  overlay,
+  grade,
 }) => {
   const frame =
     useCurrentFrame();
@@ -606,8 +1116,7 @@ const PhotoScene: React.FC<{
   const animationFrames =
     durationInFrames(
       duration,
-    ) +
-    TRANSITION_DURATION;
+    ) + tailFrames;
 
   const progress =
     animationFrames <= 1
@@ -779,6 +1288,8 @@ const PhotoScene: React.FC<{
       aspect={
         imageAnalysis.contentAspectRatio
       }
+      overlay={overlay}
+      grade={grade}
       backdrop={
         <Img
           src={staticFile(src)}
@@ -817,11 +1328,15 @@ const VideoScene: React.FC<{
   originalFile: string;
   start: number;
   duration: number;
+  overlay?: React.ReactNode;
+  grade: string;
 }> = ({
   src,
   originalFile,
   start,
   duration,
+  overlay,
+  grade,
 }) => {
   const videoAnalysis =
     getAnalysisForVideo(
@@ -904,6 +1419,8 @@ const VideoScene: React.FC<{
       aspect={
         videoAnalysis.contentAspectRatio
       }
+      overlay={overlay}
+      grade={grade}
       backdrop={
         <OffthreadVideo
           src={staticFile(src)}
@@ -935,9 +1452,26 @@ const VideoScene: React.FC<{
 
 const SceneComponent: React.FC<{
   scene: Scene;
+  tailFrames: number;
+  isStatic?: boolean;
 }> = ({
   scene,
+  tailFrames,
+  isStatic = false,
 }) => {
+  const overlay =
+    scene.overlay ? (
+      <SceneText
+        overlay={
+          scene.overlay
+        }
+        sceneFrames={durationInFrames(
+          scene.duration,
+        )}
+        isStatic={isStatic}
+      />
+    ) : undefined;
+
   if (
     scene.type === "photo"
   ) {
@@ -947,6 +1481,11 @@ const SceneComponent: React.FC<{
         duration={
           scene.duration
         }
+        tailFrames={
+          tailFrames
+        }
+        overlay={overlay}
+        grade={scene.grade}
       />
     );
   }
@@ -963,248 +1502,211 @@ const SceneComponent: React.FC<{
       duration={
         scene.duration
       }
+      overlay={overlay}
+      grade={scene.grade}
     />
   );
 };
+/*
+ * Plansza końcowa: logo, hasło i wezwanie do kontaktu.
+ *
+ * Wszystko, co ważne, leży między 14% a 62% wysokości — niżej
+ * na Instagramie i Facebooku wchodzi opis rolki i nazwa konta,
+ * więc telefon postawiony na dole byłby zasłonięty.
+ */
+const EndCard: React.FC =
+  () => {
+    /*
+     * Klatka lokalna dla sekwencji planszy — zaczyna się od 0
+     * w chwili, gdy plansza zaczyna się wyłaniać z ostatniej sceny.
+     */
+    const frame =
+      useCurrentFrame();
 
-const EndCard: React.FC<{
-  frame: number;
-}> = ({
-  frame,
-}) => {
-  /*
-   * frame jest lokalny dla EndCard.
-   * Zawsze zaczyna od 0 niezależnie od
-   * długości całej rolki.
-   */
+    const appear = (
+      startFrame: number,
+      distance = 0,
+    ) => {
+      const progress =
+        interpolate(
+          frame,
+          [
+            startFrame,
+            startFrame + 14,
+          ],
+          [0, 1],
+          {
+            extrapolateLeft:
+              "clamp",
+            extrapolateRight:
+              "clamp",
+            easing:
+              Easing.out(
+                Easing.cubic,
+              ),
+          },
+        );
 
-  const logoOpacity =
-    interpolate(
-      frame,
-      [0, 15],
-      [0, 1],
-      {
-        extrapolateLeft:
-          "clamp",
-        extrapolateRight:
-          "clamp",
-        easing:
-          Easing.out(
-            Easing.cubic,
-          ),
-      },
-    );
+      return {
+        opacity: progress,
+        transform: `translate(-50%, ${(1 - progress) * distance}px)`,
+      };
+    };
 
-  const taglineOpacity =
-    interpolate(
-      frame,
-      [18, 35],
-      [0, 1],
-      {
-        extrapolateLeft:
-          "clamp",
-        extrapolateRight:
-          "clamp",
-      },
-    );
+    const lineWidth =
+      interpolate(
+        frame,
+        [30, 46],
+        [0, 260],
+        {
+          extrapolateLeft:
+            "clamp",
+          extrapolateRight:
+            "clamp",
+          easing:
+            Easing.out(
+              Easing.cubic,
+            ),
+        },
+      );
 
-  const taglineY =
-    interpolate(
-      frame,
-      [18, 35],
-      [20, 0],
-      {
-        extrapolateLeft:
-          "clamp",
-        extrapolateRight:
-          "clamp",
-        easing:
-          Easing.out(
-            Easing.cubic,
-          ),
-      },
-    );
+    const centered = {
+      position:
+        "absolute" as const,
+      left: "50%",
+      width: "90%",
+      textAlign:
+        "center" as const,
+      fontFamily:
+        FONT_FAMILY,
+    };
 
-  const websiteOpacity =
-    interpolate(
-      frame,
-      [38, 52],
-      [0, 1],
-      {
-        extrapolateLeft:
-          "clamp",
-        extrapolateRight:
-          "clamp",
-      },
-    );
-
-  const websiteY =
-    interpolate(
-      frame,
-      [38, 52],
-      [15, 0],
-      {
-        extrapolateLeft:
-          "clamp",
-        extrapolateRight:
-          "clamp",
-        easing:
-          Easing.out(
-            Easing.cubic,
-          ),
-      },
-    );
-
-  const lineWidth =
-    interpolate(
-      frame,
-      [34, 50],
-      [0, 240],
-      {
-        extrapolateLeft:
-          "clamp",
-        extrapolateRight:
-          "clamp",
-        easing:
-          Easing.out(
-            Easing.cubic,
-          ),
-      },
-    );
-
-  return (
-    <AbsoluteFill
-      style={{
-        backgroundColor:
-          "#f2f0eb",
-        alignItems:
-          "center",
-        justifyContent:
-          "center",
-        overflow:
-          "hidden",
-      }}
-    >
-      <div
+    return (
+      <AbsoluteFill
         style={{
-          position:
-            "absolute",
-          inset: 0,
-          background:
-            "radial-gradient(circle at 50% 35%, rgba(255,255,255,0.9), rgba(242,240,235,0) 55%)",
-        }}
-      />
-
-      <div
-        style={{
-          position:
-            "absolute",
-          top: "30%",
-          left: "50%",
-          transform:
-            "translate(-50%, -50%)",
-          opacity:
-            logoOpacity,
-          width: 780,
-          display:
-            "flex",
-          justifyContent:
-            "center",
-          alignItems:
-            "center",
+          backgroundColor:
+            "#f2f0eb",
+          overflow:
+            "hidden",
         }}
       >
-        <Img
-          src={staticFile(
-            "others/logo_duze_bez_tla.png",
-          )}
+        <div
           style={{
-            width: "100%",
-            height: "auto",
-            display:
-              "block",
+            position:
+              "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(circle at 50% 28%, rgba(255,255,255,0.9), rgba(242,240,235,0) 55%)",
           }}
         />
-      </div>
 
-      <div
-        style={{
-          position:
-            "absolute",
-          top: "53%",
-          left: "50%",
-          transform:
-            `translate(-50%, ${taglineY}px)`,
-          opacity:
-            taglineOpacity,
-          width:
-            "90%",
-          textAlign:
-            "center",
-          color:
-            "#1c1c1c",
-          fontFamily:
-            "Arial, Helvetica, sans-serif",
-          fontSize:
-            48,
-          fontWeight:
-            400,
-          letterSpacing:
-            1.2,
-        }}
-      >
-        Ogrodzenia,
-        <br />
-        które robią różnicę
-      </div>
+        <div
+          style={{
+            position:
+              "absolute",
+            top: 300,
+            left: "50%",
+            width: 720,
+            ...appear(0),
+          }}
+        >
+          <Img
+            src={staticFile(
+              "others/logo_duze_bez_tla.png",
+            )}
+            style={{
+              width: "100%",
+              height: "auto",
+              display:
+                "block",
+            }}
+          />
+        </div>
 
-      <div
-        style={{
-          position:
-            "absolute",
-          top: "67%",
-          left: "50%",
-          transform:
-            "translateX(-50%)",
-          width:
-            lineWidth,
-          height: 2,
-          backgroundColor:
-            "#b99a5b",
-          opacity:
-            websiteOpacity,
-        }}
-      />
+        <div
+          style={{
+            ...centered,
+            top: 640,
+            color:
+              "#1c1c1c",
+            fontSize: 54,
+            fontWeight: 600,
+            lineHeight: 1.2,
+            ...appear(14, 20),
+          }}
+        >
+          Ogrodzenia,
+          <br />
+          które robią różnicę
+        </div>
 
-      <div
-        style={{
-          position:
-            "absolute",
-          top: "71%",
-          left: "50%",
-          transform:
-            `translate(-50%, ${websiteY}px)`,
-          opacity:
-            websiteOpacity,
-          color:
-            "#1c1c1c",
-          fontFamily:
-            "Arial, Helvetica, sans-serif",
-          fontSize:
-            42,
-          fontWeight:
-            400,
-          letterSpacing:
-            3,
-          whiteSpace:
-            "nowrap",
-        }}
-      >
-        www.exbram.pl
-      </div>
-    </AbsoluteFill>
-  );
-};
+        <div
+          style={{
+            position:
+              "absolute",
+            top: 812,
+            left: "50%",
+            transform:
+              "translateX(-50%)",
+            width:
+              lineWidth,
+            height: 3,
+            backgroundColor:
+              BRAND_RED,
+          }}
+        />
+
+        <div
+          style={{
+            ...centered,
+            top: 858,
+            color:
+              BRAND_RED,
+            fontSize: 44,
+            fontWeight: 800,
+            letterSpacing: 5,
+            ...appear(32, 15),
+          }}
+        >
+          BEZPŁATNA WYCENA
+        </div>
+
+        <div
+          style={{
+            ...centered,
+            top: 920,
+            color:
+              "#111111",
+            fontSize: 104,
+            fontWeight: 800,
+            letterSpacing: 2,
+            whiteSpace:
+              "nowrap",
+            ...appear(38, 15),
+          }}
+        >
+          {PHONE_NUMBER}
+        </div>
+
+        <div
+          style={{
+            ...centered,
+            top: 1068,
+            color:
+              "#2a2a2a",
+            fontSize: 44,
+            fontWeight: 600,
+            letterSpacing: 2,
+            whiteSpace:
+              "nowrap",
+            ...appear(46, 15),
+          }}
+        >
+          www.exbram.pl
+        </div>
+      </AbsoluteFill>
+    );
+  };
 
 const MusicTrack: React.FC =
   () => {
@@ -1251,49 +1753,12 @@ const MusicTrack: React.FC =
 
 export const MyComponent: React.FC<Props> =
   () => {
-    const frame =
-      useCurrentFrame();
-
-    const mediaDuration =
-      getMediaDurationInFrames();
-
     /*
-     * KLUCZOWA ZMIANA
-     *
-     * W danym momencie renderujemy wyłącznie
-     * jedną z dwóch rzeczy:
-     *
-     * 1. część materiałową
-     * 2. EndCard
-     *
-     * Nie ma żadnego Sequence nakładającego
-     * planszę na TransitionSeries.
+     * Plansza końcowa jest ostatnim elementem TransitionSeries,
+     * więc wyłania się z ostatniej sceny przez przenikanie,
+     * zamiast wskakiwać twardym cięciem z ciemnego kadru na jasny.
+     * Muzyka leży poza serią i gra przez całą rolkę.
      */
-    if (
-      frame >= mediaDuration
-    ) {
-      const endCardFrame =
-        frame -
-        mediaDuration;
-
-      return (
-        <AbsoluteFill
-          style={{
-            backgroundColor:
-              "#f2f0eb",
-          }}
-        >
-          <MusicTrack />
-
-          <EndCard
-            frame={
-              endCardFrame
-            }
-          />
-        </AbsoluteFill>
-      );
-    }
-
     return (
       <AbsoluteFill
         style={{
@@ -1309,9 +1774,11 @@ export const MyComponent: React.FC<Props> =
               scene,
               index,
             ) => {
-              const hasNextScene =
-                index <
-                scenes.length - 1;
+              const tailFrames =
+                getTailFrames(
+                  index,
+                  scenes.length,
+                );
 
               return (
                 <React.Fragment
@@ -1320,34 +1787,78 @@ export const MyComponent: React.FC<Props> =
                   <TransitionSeries.Sequence
                     durationInFrames={getSequenceDurationInFrames(
                       scene.duration,
-                      hasNextScene,
+                      tailFrames,
                     )}
                   >
                     <SceneComponent
                       scene={
                         scene
                       }
+                      tailFrames={
+                        tailFrames
+                      }
                     />
                   </TransitionSeries.Sequence>
 
-                  {hasNextScene && (
-                    <TransitionSeries.Transition
-                      timing={linearTiming(
-                        {
-                          durationInFrames:
-                            TRANSITION_DURATION,
-                        },
-                      )}
-                      presentation={
-                        fade()
-                      }
-                    />
-                  )}
+                  <TransitionSeries.Transition
+                    timing={linearTiming(
+                      {
+                        durationInFrames:
+                          tailFrames,
+                      },
+                    )}
+                    presentation={
+                      fade()
+                    }
+                  />
                 </React.Fragment>
               );
             },
           )}
+
+          <TransitionSeries.Sequence
+            durationInFrames={durationInFrames(
+              END_CARD_DURATION,
+            )}
+          >
+            <EndCard />
+          </TransitionSeries.Sequence>
         </TransitionSeries>
       </AbsoluteFill>
+    );
+  };
+
+/*
+ * Okładka rolki (render: npx remotion still Cover).
+ *
+ * Pierwsza scena z hookiem w pełnej widoczności. Siatka profilu
+ * na Instagramie przycina okładkę do 3:4 ze środka kadru
+ * (y 240-1680), a napis stoi od ~340 px, więc mieści się w obu
+ * widokach.
+ */
+export const CoverImage: React.FC =
+  () => {
+    const firstScene =
+      scenes[0];
+
+    if (!firstScene) {
+      return (
+        <AbsoluteFill
+          style={{
+            backgroundColor:
+              "black",
+          }}
+        />
+      );
+    }
+
+    return (
+      <SceneComponent
+        scene={firstScene}
+        tailFrames={
+          TRANSITION_DURATION
+        }
+        isStatic
+      />
     );
   };

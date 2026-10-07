@@ -63,6 +63,42 @@ const MIN_VIDEO_FRAGMENT_QUALITY = 0.8;
  */
 const ANALYSIS_SCHEMA_VERSION = 5;
 
+/*
+ * Napisy na ekranie. Limity trzymają tekst w dwóch liniach
+ * przy rozmiarach fontu z Composition.tsx — model potrafi je
+ * przekroczyć, więc cleanOverlayText przycina na granicy słowa.
+ */
+const HOOK_MAX_CHARS = 42;
+
+const CAPTION_MAX_CHARS = 30;
+
+const cleanOverlayText = (
+  value,
+  maxChars,
+) => {
+  const text = String(
+    value ?? "",
+  )
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[.!]+$/, "");
+
+  if (
+    text.length <= maxChars
+  ) {
+    return text;
+  }
+
+  const cut = text
+    .slice(0, maxChars + 1)
+    .replace(/\s+\S*$/, "");
+
+  return cut.replace(
+    /[,;:–-]+$/,
+    "",
+  );
+};
+
 const getMimeType = (
   extension,
 ) => {
@@ -863,6 +899,32 @@ RÓŻNORODNOŚĆ:
 - pokazuj zarówno całość, jak i detale,
 - priorytetem jest produkt: ogrodzenie, brama, furtka, panele, detale wykonania.
 
+NAPISY NA EKRANIE (rolki ogląda się głównie bez dźwięku):
+
+- hook — jedno krótkie hasło na pierwsze ~2 sekundy rolki, pokazywane
+  na pierwszej scenie. Ma zatrzymać przewijanie: budzi ciekawość albo
+  mówi wprost, co widz zaraz zobaczy.
+  3-7 słów, maksymalnie ${HOOK_MAX_CHARS} znaków, bez kropki na końcu
+  i bez wykrzyknika. Zakazane: "Prezentujemy", "Kolejna realizacja",
+  "Zobacz", nazwa firmy (logo jest w kadrze), superlatywy
+  ("najlepsze", "idealne", "wymarzone").
+  Przykładowe KIERUNKI (nie kopiuj): nazwanie efektu
+  ("Wjazd, który robi pierwsze wrażenie"), konkret produktu
+  ("Lamele, brama i furtka w jednym rytmie"), mała zagadka
+  ("Ten detal zmienia cały front domu").
+- caption — krótki podpis do sceny: 2-4 słowa, maksymalnie
+  ${CAPTION_MAX_CHARS} znaków, bez kropki. Nazywa jedną rzecz WIDOCZNĄ
+  w tej scenie (np. "Poziome lamele", "Furtka ze skrzynką na listy",
+  "Brama dwuskrzydłowa", "Detal mocowania").
+- pierwsza scena ma caption "" (na niej jest hook),
+- podpisy daj 2-4 scenom; pozostałe mają caption "" — napis na każdej
+  scenie męczy, a czysty kadr też jest w porządku,
+- nie powtarzaj w podpisach tej samej informacji,
+- podpisuj WYŁĄCZNIE to, co potwierdza pole subject danego materiału:
+  bez liczb, wymiarów, kodów RAL, nazw materiałów (stal, aluminium)
+  i funkcji (automat, pilot), których analiza nie wymienia wprost,
+- język polski, wielka litera tylko na początku.
+
 WAŻNE:
 
 1. Możesz wybierać WYŁĄCZNIE materiały znajdujące się na przekazanej liście.
@@ -872,8 +934,8 @@ WAŻNE:
 5. Nigdy nie twórz własnego fragmentId.
 6. Dla filmu nie zmieniaj czasu rozpoczęcia ani długości wybranego fragmentu.
 7. Nie dodawaj żadnych innych plików.
-8. Nie dodawaj napisów.
-9. Nie dodawaj CTA.
+8. Napisy wyłącznie w polach hook i caption — zgodnie z sekcją NAPISY.
+9. Nie dodawaj CTA (plansza końcowa ma je na stałe).
 10. Nie dodawaj muzyki.
 11. Nie wymyślaj treści, których nie potwierdza analiza materiału.
 12. Pole reason krótko wyjaśnia decyzję montażową.
@@ -937,6 +999,10 @@ Zwróć wyłącznie JSON zgodny ze schematem.
                     reason: {
                       type: "string",
                     },
+
+                    caption: {
+                      type: "string",
+                    },
                   },
 
                   required: [
@@ -945,13 +1011,19 @@ Zwróć wyłącznie JSON zgodny ze schematem.
                     "duration",
                     "start",
                     "reason",
+                    "caption",
                   ],
                 },
+              },
+
+              hook: {
+                type: "string",
               },
             },
 
             required: [
               "scenes",
+              "hook",
             ],
           },
         },
@@ -1036,6 +1108,12 @@ Zwróć wyłącznie JSON zgodny ze schematem.
 
         reason:
           scene.reason,
+
+        caption:
+          cleanOverlayText(
+            scene.caption,
+            CAPTION_MAX_CHARS,
+          ),
       });
 
       continue;
@@ -1082,6 +1160,12 @@ Zwróć wyłącznie JSON zgodny ze schematem.
 
       reason:
         scene.reason,
+
+      caption:
+        cleanOverlayText(
+          scene.caption,
+          CAPTION_MAX_CHARS,
+        ),
     });
   }
 
@@ -1163,7 +1247,18 @@ Zwróć wyłącznie JSON zgodny ze schematem.
     );
   }
 
+  /*
+   * Na pierwszej scenie stoi hook — podpis by z nim kolidował,
+   * więc czyścimy go niezależnie od tego, co zwrócił model.
+   */
+  uniqueScenes[0].caption = "";
+
   return {
+    hook: cleanOverlayText(
+      plan.hook,
+      HOOK_MAX_CHARS,
+    ),
+
     scenes:
       uniqueScenes,
   };

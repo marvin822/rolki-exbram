@@ -68,11 +68,15 @@ nieistniejący) folder z muzyką oznacza rolkę bez podkładu, nie błąd.
 output/
 └── kowalski-brama/
     ├── reel-RRRR-MM-DD_GG-MM-SS.mp4
-    └── opis-RRRR-MM-DD_GG-MM-SS.txt
+    ├── opis-RRRR-MM-DD_GG-MM-SS.txt
+    └── okladka-RRRR-MM-DD_GG-MM-SS.jpg
 ```
 
-Folder wyjściowy nazywa się tak samo jak źródłowy. Każdy przebieg dokłada nową
-parę plików ze wspólnym znacznikiem czasu — nic nie jest nadpisywane.
+Folder wyjściowy nazywa się tak samo jak źródłowy. Każdy przebieg dokłada nowy
+komplet plików ze wspólnym znacznikiem czasu — nic nie jest nadpisywane.
+
+Okładka to pierwsza scena z hookiem (kompozycja `Cover`) — do ustawienia
+ręcznie przy publikacji. Jej błąd nie zatrzymuje pipeline'u.
 
 ## 3a. Stan między zestawami
 
@@ -105,8 +109,11 @@ udało, a kod wyjścia jest niezerowy, gdy cokolwiek padło.
 | 3 | `analyze-video-detail.mjs` | do 4 kandydatów → 12 klatek szczegółowych każdy → precyzyjne fragmenty w `video-analysis.json` |
 | 4 | `analyze-image.mjs` | zdjęcia → `analysis.json`; zdjęcia + fragmenty → `edit.json` (plan montażu) |
 | 5 | `normalize-videos.mjs` | filmy → `public/processed/*.mp4` (stabilizacja + skala + 30 fps, bez dźwięku) |
-| 6 | `select-music.mjs` | `public/music/` → `music.json` |
-| 7 | Remotion | `edit.json` + `analysis.json` + `video-analysis.json` + `music.json` → `output/reel-*.mp4` |
+| 5a | `measure-grade.mjs` | pomiar jasności i nasycenia każdej sceny → `grade.json` (korekta kolorów per scena) |
+| 6 | `select-music.mjs` | `public/music/` → `music.json` (utwór + wykryte tempo i pierwsze uderzenie) |
+| 7 | Remotion | `edit.json` + `analysis.json` + `video-analysis.json` + `music.json` → rolka |
+| 7a | FFmpeg `loudnorm` (w `make-reel.mjs`) | głośność → -14 LUFS, obraz kopiowany → `output/reel-*.mp4` |
+| 7b | Remotion `still Cover` | → `output/okladka-*.jpg` |
 | 8 | `generate-description.mjs` | te same analizy → `output/opis-*.txt` |
 
 Zestaw bez filmów przechodzi tą samą ścieżką — kroki 1–3 i 5 same się pomijają.
@@ -183,16 +190,47 @@ droga i niebo liczą się jako `deadSpace`, nawet gdy ładnie wyglądają.
   i wyłącznie te z `qualityScore ≥ 0.8`.
 - Gdy większość zdjęć ma niski `productProminence`, a są dobre klipy — rolka
   opiera się na wideo.
+- **Napisy** układa planer razem z montażem: `hook` (3–7 słów, maks. 42 znaki)
+  na pierwszą scenę i `caption` (2–4 słowa, maks. 30 znaków) dla 2–4 kolejnych
+  scen. Tylko to, co potwierdza pole `subject` — bez liczb, kodów RAL i nazw
+  materiałów. Limity pilnuje też kod (`cleanOverlayText`).
 
 ## 8. Ruch, dźwięk, plansza
 
 - Zdjęcia dostają delikatny zoom lub panoramę; dystans skaluje się z długością
   ujęcia, żeby dłuższe przytrzymanie nie wyglądało na zamrożone.
-- Przejścia: `fade`, 15 klatek.
+- Przejścia: `fade`, 6 klatek między scenami, 12 klatek na planszę końcową
+  (wyłania się z ostatniej sceny zamiast wskakiwać cięciem).
+- **Cięcia w rytm:** `select-music.mjs` wykrywa tempo i pierwsze uderzenie
+  podkładu, a kompozycja przesuwa każde cięcie tak, żeby środek przejścia
+  wypadł na beat. Zmiana długości sceny: maks. -0,5 s / +0,5 s (zdjęcie)
+  lub +0,2 s (wideo). Przy niewyraźnym rytmie (`beat: null`) nic się nie
+  przesuwa.
 - Filmy są **bez dźwięku** (`-an` przy normalizacji + `muted`). Ścieżkę niesie
   losowany podkład z `public/music/` — z fade in/out i rotacją, żeby kolejne
-  rolki nie dostawały tego samego utworu.
-- Plansza końcowa: 3 s, logo, „Ogrodzenia, które robią różnicę", `www.exbram.pl`.
+  rolki nie dostawały tego samego utworu. Po renderze głośność jest wyrównywana
+  do -14 LUFS (bez tego rolka miała ok. -27 LUFS).
+- **Napisy** stoją u góry pasa z treścią — w strefie bezpiecznej Instagrama
+  i Facebooka (górne ~14% i dolne ~35% kadru zasłania interfejs). Hook: biały,
+  Montserrat 800, czerwona belka w kolorze logo, przyciemnienie góry kadru.
+  Podpis: ciemna etykieta z czerwoną krawędzią. Rozmyte pasy zostają czyste.
+- **Znak wodny** w lewym dolnym rogu pasa — prawą krawędź zajmuje kolumna
+  przycisków. Jedna wersja rolki pasuje do obu platform.
+- Plansza końcowa: 3,5 s, logo, „Ogrodzenia, które robią różnicę",
+  „BEZPŁATNA WYCENA" + telefon, `www.exbram.pl` — wszystko powyżej 62%
+  wysokości kadru, żeby nie wchodziło pod opis rolki.
+- **Korekta kolorów per scena:** `measure-grade.mjs` mierzy FFmpegiem (`signalstats`)
+  rozpiętość jasności (10.–90. percentyl), średnią jasność i nasycenie każdego
+  ujęcia i liczy filtr sprowadzający je do wspólnego wzorca — płaskie i ciemne
+  kadry dostają więcej, dobre prawie nic. Bezpieczniki: kontrast 1,00–1,16,
+  jasność 0,95–1,12 i nie wyżej, niż pozwala niebo, łączne nasycenie ±6%
+  (antracyt nie może zniebieszczeć). Filmy: jedna korekta na fragment,
+  uśredniona z 4 klatek, żeby nie migotało. Wzorzec i progi to stałe na górze
+  skryptu. Scena bez pomiaru dostaje `DEFAULT_GRADE` z kompozycji. Tło, logo
+  i napisy są poza filtrem.
+- Render w przestrzeni barw `bt709` (`yuv420p`, zakres ograniczony) — przy
+  domyślnej wychodził `yuvj420p`, który Meta potrafi przekodować z przesunięciem
+  kontrastu.
 
 ## 9. Opis do rolki
 

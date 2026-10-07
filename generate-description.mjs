@@ -66,7 +66,7 @@ const OUTPUT_FILE = path.join(
  * jedno wezwanie do działania, dane kontaktowe i hasztagi marki.
  */
 const CTA_LINE =
-  "Planujesz ogrodzenie? Napisz do nas — przygotujemy rozwiązanie dopasowane do Twojej posesji.";
+  "Planujesz ogrodzenie? Wyślij nam zdjęcie posesji — przygotujemy bezpłatną wycenę.";
 
 const CONTACT_LINES = [
   "www.exbram.pl",

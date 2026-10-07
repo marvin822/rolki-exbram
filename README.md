@@ -28,6 +28,7 @@ o tej samej nazwie:
 ```
 output/kowalski-brama/reel-2026-09-06_23-32-45.mp4
 output/kowalski-brama/opis-2026-09-06_23-32-45.txt
+output/kowalski-brama/okladka-2026-09-06_23-32-45.jpg
 ```
 
 | Uruchomienie | Co robi |

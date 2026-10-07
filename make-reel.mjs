@@ -94,6 +94,10 @@ const steps = [
     args: ["normalize-videos.mjs"],
   },
   {
+    name: "Pomiar ujęć i korekta kolorów",
+    args: ["measure-grade.mjs"],
+  },
+  {
     name: "Wybór podkładu muzycznego",
     args: ["select-music.mjs"],
   },
@@ -212,6 +216,162 @@ const banner = (text) => {
 
   console.log(
     "========================================\n",
+  );
+};
+
+/*
+ * Wyrównanie głośności do -14 LUFS — poziomu, do którego
+ * Instagram i Facebook sprowadzają dźwięk. Bez tego rolka
+ * (sama muzyka na 25% głośności) wychodziła na ok. -27 LUFS
+ * i przy przewijaniu była wyraźnie cichsza od sąsiednich.
+ *
+ * Dwa przebiegi loudnorm: pierwszy mierzy, drugi koryguje
+ * liniowo (bez pompowania dynamiki). Obraz jest kopiowany
+ * bez ponownego kodowania. FFmpeg dostaje argumenty bez
+ * powłoki, więc spacje w nazwie zestawu nie przeszkadzają.
+ *
+ * Gdy coś pójdzie nie tak, rolka zostaje w oryginalnej
+ * głośności — to lepsze niż brak rolki.
+ */
+const LOUDNESS_TARGET = {
+  I: -14,
+  TP: -1.5,
+  LRA: 11,
+};
+
+const normalizeLoudness = (
+  inputPath,
+  outputPath,
+) => {
+  const target =
+    `I=${LOUDNESS_TARGET.I}:` +
+    `TP=${LOUDNESS_TARGET.TP}:` +
+    `LRA=${LOUDNESS_TARGET.LRA}`;
+
+  const keepOriginal = (
+    reason,
+  ) => {
+    console.warn(
+      `Nie udało się wyrównać głośności (${reason}) — zostawiam oryginał.`,
+    );
+
+    fs.renameSync(
+      inputPath,
+      outputPath,
+    );
+  };
+
+  const measure = spawnSync(
+    "ffmpeg",
+    [
+      "-hide_banner",
+      "-nostats",
+      "-i",
+      inputPath,
+      "-vn",
+      "-af",
+      `loudnorm=${target}:print_format=json`,
+      "-f",
+      "null",
+      "-",
+    ],
+    {
+      encoding: "utf8",
+    },
+  );
+
+  const jsonMatch =
+    measure.status === 0
+      ? measure.stderr.match(
+          /\{[^{}]*"input_i"[^{}]*\}/,
+        )
+      : null;
+
+  if (!jsonMatch) {
+    keepOriginal(
+      "pomiar nieudany",
+    );
+
+    return;
+  }
+
+  const measured = JSON.parse(
+    jsonMatch[0],
+  );
+
+  /*
+   * Cisza (rolka bez podkładu) daje -inf — nie ma czego
+   * wyrównywać.
+   */
+  if (
+    !Number.isFinite(
+      Number(measured.input_i),
+    )
+  ) {
+    console.log(
+      "Rolka bez dźwięku — pomijam wyrównanie głośności.",
+    );
+
+    fs.renameSync(
+      inputPath,
+      outputPath,
+    );
+
+    return;
+  }
+
+  const apply = spawnSync(
+    "ffmpeg",
+    [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-y",
+      "-i",
+      inputPath,
+      "-c:v",
+      "copy",
+      "-af",
+      `loudnorm=${target}` +
+        `:measured_I=${measured.input_i}` +
+        `:measured_TP=${measured.input_tp}` +
+        `:measured_LRA=${measured.input_lra}` +
+        `:measured_thresh=${measured.input_thresh}` +
+        `:offset=${measured.target_offset}` +
+        ":linear=true",
+      "-ar",
+      "48000",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "192k",
+      "-movflags",
+      "+faststart",
+      outputPath,
+    ],
+    {
+      stdio: "inherit",
+    },
+  );
+
+  if (apply.status !== 0) {
+    if (
+      fs.existsSync(outputPath)
+    ) {
+      fs.rmSync(outputPath);
+    }
+
+    keepOriginal(
+      "błąd FFmpeg",
+    );
+
+    return;
+  }
+
+  fs.rmSync(inputPath);
+
+  console.log(
+    `Głośność: ${measured.input_i} LUFS → ${LOUDNESS_TARGET.I} LUFS`,
   );
 };
 
@@ -411,6 +571,20 @@ const processSet = async (
       `opis-${stamp}.txt`,
     );
 
+  const coverPath = path.join(
+    outputDir,
+    `okladka-${stamp}.jpg`,
+  );
+
+  /*
+   * Remotion renderuje do pliku pośredniego — gotowa rolka
+   * powstaje z niego po wyrównaniu głośności.
+   */
+  const renderPath = path.join(
+    outputDir,
+    `reel-${stamp}.render.mp4`,
+  );
+
   /*
    * Ścieżka idzie przez powłokę (shell: true), a nazwa zestawu
    * może zawierać spacje — stąd jawne cudzysłowy.
@@ -422,7 +596,7 @@ const processSet = async (
         "remotion",
         "render",
         "MyComp",
-        `"${reelPath}"`,
+        `"${renderPath}"`,
       ],
       {
         stdio: "inherit",
@@ -438,6 +612,47 @@ const processSet = async (
       ok: false,
       error: "Renderowanie zakończyło się błędem.",
     };
+  }
+
+  banner(
+    `${setName} — Wyrównanie głośności`,
+  );
+
+  normalizeLoudness(
+    renderPath,
+    reelPath,
+  );
+
+  banner(
+    `${setName} — Okładka`,
+  );
+
+  /*
+   * Okładka nie jest krytyczna — przy błędzie rolka i opis
+   * powstają dalej, a okładkę można wybrać ręcznie w aplikacji.
+   */
+  const coverResult =
+    spawnSync(
+      "npx",
+      [
+        "remotion",
+        "still",
+        "Cover",
+        `"${coverPath}"`,
+      ],
+      {
+        stdio: "inherit",
+        shell: true,
+      },
+    );
+
+  const coverOk =
+    coverResult.status === 0;
+
+  if (!coverOk) {
+    console.warn(
+      "Nie udało się wygenerować okładki — pomijam.",
+    );
   }
 
   if (!skipDescription) {
@@ -474,6 +689,9 @@ const processSet = async (
       skipDescription
         ? null
         : descriptionPath,
+    coverPath: coverOk
+      ? coverPath
+      : null,
   };
 };
 
@@ -616,6 +834,14 @@ const main = async () => {
       ) {
         console.log(
           `     ${result.descriptionPath}`,
+        );
+      }
+
+      if (
+        result.coverPath
+      ) {
+        console.log(
+          `     ${result.coverPath}`,
         );
       }
     } else {
