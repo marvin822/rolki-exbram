@@ -72,6 +72,169 @@ const HOOK_MAX_CHARS = 42;
 
 const CAPTION_MAX_CHARS = 30;
 
+/*
+ * Zdjęcia zrobione kilka sekund po sobie to zwykle prawie ten
+ * sam kadr (seria z telefonu). Model widzi tylko opisy, więc
+ * potrafi postawić je obok siebie — w rolce wygląda to jak
+ * zacięcie. Pilnujemy tego w kodzie.
+ */
+const BURST_SECONDS = 4;
+
+const parseTakenAt = (
+  value,
+) => {
+  const match = String(
+    value ?? "",
+  ).match(
+    /(\d{4})[:-](\d{2})[:-](\d{2})[ T](\d{2}):(\d{2}):(\d{2})/,
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day, hour, minute, second] =
+    match.map(Number);
+
+  return (
+    Date.UTC(
+      year,
+      month - 1,
+      day,
+      hour,
+      minute,
+      second,
+    ) / 1000
+  );
+};
+
+/*
+ * Rozdziela sąsiadujące zdjęcia z tej samej serii: najpierw próbuje
+ * zamienić drugie z dalszą sceną (bez ruszania zakończenia, które
+ * planer wybiera świadomie), a gdy się nie da — usuwa je. Krótsza
+ * rolka jest lepsza niż dwa razy ten sam kadr.
+ */
+const separateBurstShots = (
+  scenes,
+  takenAtByFile,
+) => {
+  const isBurstPair = (
+    first,
+    second,
+  ) => {
+    if (
+      !first ||
+      !second ||
+      first.fragmentId ||
+      second.fragmentId
+    ) {
+      return false;
+    }
+
+    const firstTime =
+      takenAtByFile.get(
+        first.file,
+      );
+
+    const secondTime =
+      takenAtByFile.get(
+        second.file,
+      );
+
+    return (
+      firstTime != null &&
+      secondTime != null &&
+      Math.abs(
+        firstTime -
+          secondTime,
+      ) <= BURST_SECONDS
+    );
+  };
+
+  const hasBurstAround = (
+    index,
+  ) =>
+    isBurstPair(
+      scenes[index - 1],
+      scenes[index],
+    ) ||
+    isBurstPair(
+      scenes[index],
+      scenes[index + 1],
+    );
+
+  for (
+    let index = 1;
+    index < scenes.length;
+    index += 1
+  ) {
+    if (
+      !isBurstPair(
+        scenes[index - 1],
+        scenes[index],
+      )
+    ) {
+      continue;
+    }
+
+    let fixed = false;
+
+    for (
+      let other = index + 1;
+      other <
+      scenes.length - 1;
+      other += 1
+    ) {
+      [
+        scenes[index],
+        scenes[other],
+      ] = [
+        scenes[other],
+        scenes[index],
+      ];
+
+      if (
+        !hasBurstAround(
+          index,
+        ) &&
+        !hasBurstAround(
+          other,
+        )
+      ) {
+        fixed = true;
+
+        console.log(
+          `Rozdzielono podobne zdjęcia: ${scenes[other].file} przeniesione dalej.`,
+        );
+
+        break;
+      }
+
+      [
+        scenes[index],
+        scenes[other],
+      ] = [
+        scenes[other],
+        scenes[index],
+      ];
+    }
+
+    if (!fixed) {
+      const [removed] =
+        scenes.splice(
+          index,
+          1,
+        );
+
+      console.log(
+        `Pominięto ${removed.file} — prawie ten sam kadr co poprzednia scena.`,
+      );
+
+      index -= 1;
+    }
+  }
+};
+
 const cleanOverlayText = (
   value,
   maxChars,
@@ -836,6 +999,9 @@ KOMPOZYCJA:
 - następnie pokazuj realizację z różnych perspektyw,
 - przeplataj szersze ujęcia z detalami,
 - unikaj kilku bardzo podobnych zdjęć jedno po drugim,
+- zdjęcia, których takenAt różni się o kilka sekund, to zwykle prawie
+  ten sam kadr (seria) — użyj jednego z nich, a jeśli dwóch, to nigdy
+  obok siebie,
 - mocny materiał może pojawić się bliżej końca,
 - zakończ mocnym ujęciem realizacji,
 - rolka ma sprawiać wrażenie profesjonalnego materiału reklamowego, a nie pokazu wszystkich zdjęć fotografa.
@@ -908,14 +1074,24 @@ NAPISY NA EKRANIE (rolki ogląda się głównie bez dźwięku):
   i bez wykrzyknika. Zakazane: "Prezentujemy", "Kolejna realizacja",
   "Zobacz", nazwa firmy (logo jest w kadrze), superlatywy
   ("najlepsze", "idealne", "wymarzone").
-  Przykładowe KIERUNKI (nie kopiuj): nazwanie efektu
-  ("Wjazd, który robi pierwsze wrażenie"), konkret produktu
-  ("Lamele, brama i furtka w jednym rytmie"), mała zagadka
-  ("Ten detal zmienia cały front domu").
+  Możliwe KIERUNKI (opisane słowami, nie gotowe zdania — hook ułóż
+  sam, od zera, z tego, co wyróżnia TĘ realizację): nazwanie efektu
+  dla domu, najbardziej charakterystyczny element produktu, mała
+  zagadka o detalu, kontrast przed/po, pytanie do widza.
+  Nie używaj zwrotów "w jednym rytmie", "robi różnicę", "robi
+  wrażenie" — są już na planszy końcowej albo powtarzały się
+  w poprzednich rolkach.
 - caption — krótki podpis do sceny: 2-4 słowa, maksymalnie
-  ${CAPTION_MAX_CHARS} znaków, bez kropki. Nazywa jedną rzecz WIDOCZNĄ
-  w tej scenie (np. "Poziome lamele", "Furtka ze skrzynką na listy",
-  "Brama dwuskrzydłowa", "Detal mocowania").
+  ${CAPTION_MAX_CHARS} znaków, bez kropki. Nazywa jedną CECHĘ
+  METALOWEGO PRODUKTU widoczną w tej scenie: rodzaj wypełnienia,
+  typ bramy lub furtki, detal wykonania, akcesorium.
+  Dobre: "Poziome lamele", "Furtka ze skrzynką na listy",
+  "Brama dwuskrzydłowa", "Ukryte zawiasy".
+  Złe: "Murowane słupki", "Podmurówka" (to nie nasz produkt — murek,
+  słupki murowane, kostka i dom NIE są tematem podpisu),
+  "Brama na pierwszym planie", "Przęsło przed domem" (opis kadru
+  albo położenia, a nie cecha produktu).
+  Jeśli w scenie nie ma cechy produktu wartej nazwania — caption "".
 - pierwsza scena ma caption "" (na niej jest hook),
 - podpisy daj 2-4 scenom; pozostałe mają caption "" — napis na każdej
   scenie męczy, a czysty kadr też jest w porządku,
@@ -1246,6 +1422,27 @@ Zwróć wyłącznie JSON zgodny ze schematem.
       "AI nie wygenerowało żadnej prawidłowej sceny.",
     );
   }
+
+  const takenAtByFile =
+    new Map(
+      usableMedia
+        .filter(
+          (item) =>
+            item.type ===
+            "photo",
+        )
+        .map((item) => [
+          item.file,
+          parseTakenAt(
+            item.takenAt,
+          ),
+        ]),
+    );
+
+  separateBurstShots(
+    uniqueScenes,
+    takenAtByFile,
+  );
 
   /*
    * Na pierwszej scenie stoi hook — podpis by z nim kolidował,

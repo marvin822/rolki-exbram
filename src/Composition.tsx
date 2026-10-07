@@ -756,6 +756,21 @@ const TEXT_INSET = 56;
 const HOOK_SHADOW =
   "0 4px 18px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.5)";
 
+/*
+ * Polska typografia: jednoliterowe słowa (w, z, i, a, o, u) nie mogą
+ * zostać na końcu linii — sklejamy je z następnym słowem twardą
+ * spacją. Lookbehind nie zjada poprzedzającej spacji, więc jeden
+ * przebieg łapie też łańcuchy typu "i w tle".
+ */
+const attachShortWords = (
+  text: string,
+) => {
+  return text.replace(
+    /(?<=^|\s)([aiouwzAIOUWZ]) +/g,
+    "$1\u00a0",
+  );
+};
+
 const SceneText: React.FC<{
   overlay: SceneOverlay;
   sceneFrames: number;
@@ -877,7 +892,9 @@ const SceneText: React.FC<{
                 HOOK_SHADOW,
             }}
           >
-            {overlay.text}
+            {attachShortWords(
+              overlay.text,
+            )}
           </div>
         </div>
       </>
@@ -911,7 +928,9 @@ const SceneText: React.FC<{
         color: "white",
       }}
     >
-      {overlay.text}
+      {attachShortWords(
+        overlay.text,
+      )}
     </div>
   );
 };

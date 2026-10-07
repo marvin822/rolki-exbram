@@ -113,9 +113,15 @@ const measureFrame = (
   filePath,
   seekSeconds = null,
 ) => {
+  /*
+   * Wyniki czytamy z logu (stderr), nie przez metadata=print:file=-.
+   * Przy dużych zdjęciach z iPhone'a (4032x3024 z EXIF i ICC)
+   * FFmpeg nie wypisywał nic na stdout, choć mniejsze JPEG-i
+   * i filmy działały — log działa dla wszystkich.
+   */
   const args = [
-    "-v",
-    "error",
+    "-hide_banner",
+    "-nostats",
   ];
 
   if (seekSeconds !== null) {
@@ -131,7 +137,7 @@ const measureFrame = (
     "-frames:v",
     "1",
     "-vf",
-    "scale=320:-2:out_range=full,format=yuv444p,signalstats,metadata=print:file=-",
+    "scale=320:-2:out_range=full,format=yuv444p,signalstats,metadata=print",
     "-f",
     "null",
     "-",
@@ -151,7 +157,7 @@ const measureFrame = (
 
   const read = (key) => {
     const match =
-      result.stdout.match(
+      result.stderr.match(
         new RegExp(
           `lavfi\\.signalstats\\.${key}=([0-9.]+)`,
         ),

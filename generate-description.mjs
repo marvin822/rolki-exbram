@@ -301,6 +301,9 @@ i bez wykrzykników.
 HASZTAGI (pole "hashtags"):
 - zwróć 3-6 hasztagów sensownych dla tej realizacji
   (np. ogrodzenie, brama, posesja, producentogrodzeń, nowoczesneogrodzenie),
+- tylko o metalowym produkcie (ogrodzenie, brama, furtka, lamele,
+  panele) — murek, słupki murowane, kostka czy dom to nie nasz produkt,
+  więc nie dawaj hasztagów typu "murowanesłupki" ani "podmurówka",
 - bez znaku #, bez spacji w środku,
 - #ogrodzenia i #EXBRAM są dokładane automatycznie, więc ich nie podawaj.
 

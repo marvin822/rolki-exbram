@@ -194,6 +194,11 @@ droga i niebo liczą się jako `deadSpace`, nawet gdy ładnie wyglądają.
   na pierwszą scenę i `caption` (2–4 słowa, maks. 30 znaków) dla 2–4 kolejnych
   scen. Tylko to, co potwierdza pole `subject` — bez liczb, kodów RAL i nazw
   materiałów. Limity pilnuje też kod (`cleanOverlayText`).
+  Podpisy nazywają cechę METALU (murek, słupki murowane i opis kadru są
+  zakazane), jednoliterowe słowa są sklejane z następnym twardą spacją.
+- **Serie zdjęć:** zdjęcia zrobione w odstępie ≤ 4 s (`takenAt`) to prawie ten
+  sam kadr. Kod nie pozwala postawić ich obok siebie — przenosi drugie dalej
+  (bez ruszania zakończenia), a gdy się nie da, pomija je.
 
 ## 8. Ruch, dźwięk, plansza
 
