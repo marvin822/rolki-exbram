@@ -1,15 +1,15 @@
 {
-  "file": "Crystal Coast - Take our Time.mp3",
+  "file": "Steven Beddall - Rhythm Rocket.mp3",
   "recent": [
+    "Steven Beddall - Rhythm Rocket.mp3",
     "Crystal Coast - Take our Time.mp3",
     "Captain Joz - Stunts Cheer.mp3",
     "Funky Giraffe - Are You Ready for Me Baby.mp3",
-    "ciche-godziny.mp3",
-    "CustomMelody - Hit the Nerve.mp3"
+    "ciche-godziny.mp3"
   ],
   "beat": {
-    "bpm": 113.34,
-    "offset": 0.139,
-    "confidence": 4
+    "bpm": 120.13,
+    "offset": 0.511,
+    "confidence": 5.83
   }
 }

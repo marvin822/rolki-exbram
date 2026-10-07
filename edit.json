@@ -1,168 +1,123 @@
 {
-  "set": "5",
+  "set": "6",
   "profile": {
-    "rodzaj": "Ogrodzenie palisadowe z pionowych profili stalowych z ozdobnym pasem (motyw meandra) u góry i dołu.",
+    "rodzaj": "ogrodzenie lamelowe/żaluzjowe z poziomych stalowych profili",
     "kolor": "grafit/antracyt",
-    "charakter": "pomiędzy (nowoczesna forma z klasycznym motywem)",
-    "wypelnienie": "ażurowe",
-    "brama": "dwuskrzydłowa",
+    "charakter": "nowoczesne",
+    "wypelnienie": "półpełne",
+    "brama": "jest (typ nie widać)",
     "furtka": "jest",
-    "mur": "murowane słupki i murek/podmurówka z ciemnej cegły",
-    "kolorMuru": "ciemny grafit (cegła)",
+    "mur": "murowane słupki i podmurówka",
+    "kolorMuru": "ciemnoszary/grafitowy",
     "charakterMuru": "nowoczesny",
-    "wyroznik": "Pionowe lamele z dwoma dekoracyjnymi pasami w motywie greckiego meandra — spójne na całej linii frontu."
+    "wyroznik": "szerokie poziome lamele w gęstym rozstawie, spójne z murowanymi słupkami"
   },
-  "story": "Ogrodzenie palisadowe z pionowych profili stalowych z ozdobnym pasem (motyw meandra) u góry i dołu., grafit/antracyt, pomiędzy (nowoczesna forma z klasycznym motywem), ażurowe; brama: dwuskrzydłowa; furtka: jest; mur: murowane słupki i murek/podmurówka z ciemnej cegły (ciemny grafit (cegła), nowoczesny); Pionowe lamele z dwoma dekoracyjnymi pasami w motywie greckiego meandra — spójne na całej linii frontu.",
-  "contextFile": "ogrodzenie-nowoczesne-5-7.jpg",
+  "story": "ogrodzenie lamelowe/żaluzjowe z poziomych stalowych profili, grafit/antracyt, nowoczesne, półpełne; brama: jest (typ nie widać); furtka: jest; mur: murowane słupki i podmurówka (ciemnoszary/grafitowy, nowoczesny); szerokie poziome lamele w gęstym rozstawie, spójne z murowanymi słupkami",
+  "contextFile": "DSC_9925.jpg",
   "scenes": [
     {
-      "file": "ogrodzenie-nowoczesne-5-7.jpg",
+      "file": "DSC_9925.jpg",
       "fragmentId": "",
       "duration": 4.2,
       "start": 0,
-      "reason": "Mocny front z domem w kadrze — od razu pokazuje dopasowanie ogrodzenia do architektury.",
+      "reason": "Mocny front z domem i słupkami; klarowny widok wzoru lameli — dobry hook.",
       "role": "hook",
-      "shows": "Front z bramą dwuskrzydłową i przęsłami; pionowe lamele w grafitowym kolorze, dekoracyjny pas z meandrem, dom w tle.",
+      "shows": "Front posesji z ogrodzeniem na murowanych słupkach; poziome lamele w grafitowym kolorze, gęsty rozstaw — dobrze zasłaniają.",
       "caption": "",
       "captionHighlight": ""
     },
     {
-      "file": "ogrodzenie-nowoczesne-5-6.jpg",
+      "file": "DSC_9915.jpg",
       "fragmentId": "",
       "duration": 3.5,
       "start": 0,
-      "reason": "Widać bramę i przęsła jako jedną linię — porządek wjazdu i spójność wzoru.",
-      "role": "korzysc",
-      "shows": "Brama dwuskrzydłowa i przęsła w jednym wzorze; spójny front na murowanych słupkach i podmurówce.",
-      "caption": "Pionowe profile dają rytm",
-      "captionHighlight": "rytm"
+      "reason": "Pokazuje ogrodzenie razem z domem — kontekst dopasowania do architektury.",
+      "role": "dom",
+      "shows": "Ogrodzenie z furtką na tle domu; szerokie poziome lamele w antracycie na podmurówce i murowanych słupkach.",
+      "caption": "Żaluzjowe profile filtrują widok",
+      "captionHighlight": "widok"
     },
     {
-      "file": "ogrodzenie-nowoczesne-5-5.jpg",
+      "file": "DSC_9957.jpg",
       "fragmentId": "",
       "duration": 3.2,
       "start": 0,
-      "reason": "Zbliżenie wzoru i profili — podkreśla jakość detalu i charakter motywu.",
-      "role": "detal",
-      "shows": "Zbliżenie lameli i ozdobnego pasa z motywem meandra; równe odstępy, masywne profile na tle muru.",
-      "caption": "Meander spina całą linię",
-      "captionHighlight": "Meander"
+      "reason": "Czytelna linia ogrodzenia z bramą i furtką — pokazuje spójność strefy wjazdu (korzyść).",
+      "role": "korzysc",
+      "shows": "Długi odcinek frontu z bramą wjazdową i furtką w jednej linii; poziome lamele w grafitowym, jednolity rytm przęseł.",
+      "caption": "Antracyt trzyma nowoczesny charakter",
+      "captionHighlight": "Antracyt"
     },
     {
-      "file": "ogrodzenie-nowoczesne-5-9.jpg",
+      "file": "DSC_9930.jpg",
       "fragmentId": "",
-      "duration": 3.5,
+      "duration": 3.2,
       "start": 0,
-      "reason": "Szeroka perspektywa z domem — kontekst i skala ogrodzenia w terenie.",
-      "role": "dom",
-      "shows": "Szeroki kadr frontu z domem; długie przęsła z pionowymi lamelami częściowo zasłaniają podwórko.",
-      "caption": "Ażurowe — lekko, jasno",
-      "captionHighlight": "Ażurowe"
+      "reason": "Zbliżenie jakości wykonania EXBRAM: furtka, zawias, spasowanie lameli — konkretny detal.",
+      "role": "detal",
+      "shows": "Zbliżenie furtki: zawias i pionowy profil, szerokie poziome lamele równo spasowane.",
+      "caption": "Murowane słupki — spójny efekt",
+      "captionHighlight": "spójny"
     },
     {
-      "file": "ogrodzenie-nowoczesne-5-1.jpg",
+      "file": "DSC_9938.jpg",
       "fragmentId": "",
       "duration": 3.8,
       "start": 0,
-      "reason": "Dynamiczna perspektywa wzdłuż muru — mocne zamknięcie przed planszą.",
+      "reason": "Szeroki kadr całości przed końcem — mocne podsumowanie realizacji.",
       "role": "final",
-      "shows": "Perspektywa wzdłuż frontu: przęsło między grafitowymi słupkami i murkiem; ozdobne pasy u góry i u dołu.",
-      "caption": "Też chcesz taką palisadę? Skontaktuj się z nami!",
-      "captionHighlight": "Skontaktuj"
+      "shows": "Długi front z przęsłami i bramą; poziome lamele w antracycie na ciemnych, murowanych słupkach i podmurówce.",
+      "caption": "Też chcesz taki balans? Skontaktuj się!",
+      "captionHighlight": "Skontaktuj się!"
     }
   ],
   "copy": {
     "model": "gpt-5",
     "editor": {
       "model": "gpt-5-mini",
-      "chosen": 1,
-      "reason": "Wersja 2 lepiej trzyma się briefu — naturalny hook, napisy mówią o charakterze i wrażeniu w spójną całość i zawierają tylko jedno zaproszenie do kontaktu"
+      "chosen": 2,
+      "reason": "Wersja 3 — ma najsilniejszy hook („Chroni, ale nie zamyka”), brzmi naturalnie, oddaje charakter (prywatność i lekkość) i kończy wyraźnym zaproszeniem do kontaktu"
     },
     "variants": [
       {
-        "angle": "Nowoczesność + detal",
-        "scenario": "Połączenie nowoczesnej palisady z klasycznym greckim meandrem. Lekka, ażurowa forma w grafitowym kolorze z dyskretną ozdobą, która nie przytłacza. Prowadzimy od prostoty i koloru, przez akcent wzoru, po zaproszenie do kontaktu",
-        "hook": "Nowoczesny rytm, klasyczny motyw",
-        "hookHighlight": "klasyczny motyw",
+        "angle": "Prywatność nowocześnie",
+        "scenario": "Motyw: żaluzjowe lamele w grafitowym antracycie dają więcej prywatności bez efektu ciężkiej ściany. Prowadzimy od potrzeby spokoju na froncie do info, że zrobimy to na wymiar i szybko dojedziemy z montażem. Kończymy prostym zaproszeniem do kontaktu",
+        "hook": "Prywatność w nowoczesnym wydaniu",
+        "hookHighlight": "Prywatność",
         "spans": [
           {
             "from": 2,
             "to": 2,
-            "text": "Grafitowe profile na wymiar",
-            "highlight": "na wymiar"
+            "text": "Gęste lamele dają prywatność",
+            "highlight": "prywatność"
           },
           {
             "from": 3,
             "to": 3,
-            "text": "Grecki meander — akcent z klasą",
-            "highlight": "Grecki meander"
+            "text": "Grafit trzyma nowoczesny ton",
+            "highlight": "Grafit"
           },
           {
             "from": 4,
             "to": 4,
-            "text": "Ażurowe — zostawia przestrzeń",
-            "highlight": "Ażurowe"
+            "text": "Projekt, produkcja, montaż u nas",
+            "highlight": "montaż"
           },
           {
             "from": 5,
             "to": 5,
-            "text": "Podoba Ci się ten styl? Napisz do nas!",
-            "highlight": "Napisz"
+            "text": "Chcesz taki spokój na froncie? Napisz!",
+            "highlight": "Napisz!"
           }
         ],
-        "cover": "Nowoczesne z meandrem",
+        "cover": "Więcej prywatności",
         "description": {
-          "firstLine": "Grafitowa palisada z greckim wzorem — lekko, spójnie i z charakterem",
-          "body": "Nowoczesne ogrodzenie palisadowe w kolorze grafit/antracyt, z ozdobnym pasem meandra u góry i dołu.\n\nAżurowe wypełnienie daje lekkość i przejrzystość frontu.\n\nBrama dwuskrzydłowa i furtka w tym samym stylu, wykonane na wymiar.\n\nProjekt → produkcja → montaż. Stal ocynkowana i malowana proszkowo. Montujemy w całej Polsce.",
+          "firstLine": "Nowoczesne ogrodzenie żaluzjowe: więcej prywatności bez ciężkiego muru",
+          "body": "Grafit/antracyt, poziome lamele w gęstym rozstawie i półpełne wypełnienie — front wygląda lekko, a daje spokój od ulicy 🔒\n\nBrama i furtka w tym samym stylu. Wszystko wykonujemy na wymiar — dopasujemy wysokość i rozstaw do Twojego terenu 📏\n\nModel pracy: projekt → produkcja → montaż. Montujemy w całej Polsce, a realizację możesz mieć nawet w 3–4 tygodnie 🛠️",
           "hashtags": [
-            "ogrodzeniepalisadowe",
+            "ogrodzenieżaluzjowe",
             "ogrodzenienowoczesne",
-            "bramadwuskrzydłowa",
-            "furtka"
-          ]
-        },
-        "missing": [],
-        "problems": []
-      },
-      {
-        "angle": "Geometryczny porządek",
-        "scenario": "Meander porządkuje linię pionowych profili — ozdoba bez przesady. Pokazujemy rytm, spójność i lekkość ażurowej palisady w antracycie. Kończymy jasnym zaproszeniem do kontaktu",
-        "hook": "Geometryczny porządek, zero przesady",
-        "hookHighlight": "porządek",
-        "spans": [
-          {
-            "from": 2,
-            "to": 2,
-            "text": "Pionowe profile dają rytm",
-            "highlight": "rytm"
-          },
-          {
-            "from": 3,
-            "to": 3,
-            "text": "Meander spina całą linię",
-            "highlight": "Meander"
-          },
-          {
-            "from": 4,
-            "to": 4,
-            "text": "Ażurowe — lekko, jasno",
-            "highlight": "Ażurowe"
-          },
-          {
-            "from": 5,
-            "to": 5,
-            "text": "Też chcesz taką palisadę? Skontaktuj się z nami!",
-            "highlight": "Skontaktuj"
-          }
-        ],
-        "cover": "Porządek i rytm",
-        "description": {
-          "firstLine": "Ozdoba, która nie przytłacza — tylko porządkuje linię ogrodzenia",
-          "body": "Palisadowe ogrodzenie ażurowe w antracycie z dwoma pasami greckiego meandra.\n\nRytm pionów + delikatna ozdoba = spokojny, uporządkowany front.\n\nNa wymiar, z bramą dwuskrzydłową i furtką.\n\nProjekt → produkcja → montaż. Cynk + malowanie proszkowe.",
-          "hashtags": [
-            "ogrodzenieażurowe",
-            "ogrodzeniepalisadowe",
-            "bramadwuskrzydłowa",
+            "furtka",
             "ogrodzeniedonowoczesnegodomu"
           ]
         },
@@ -170,68 +125,111 @@
         "problems": []
       },
       {
-        "angle": "Grafit i lekkość",
-        "scenario": "Ciemny grafit uspokaja front, ażurowa palisada zostawia przestrzeń. Klasyczny meander dodaje charakteru bez nadmiaru. Od koloru i lekkości przechodzimy do wzoru i funkcji, na końcu zapraszamy do wyceny",
-        "hook": "Ciemny kolor, lekka forma",
-        "hookHighlight": "lekka forma",
+        "angle": "Spójny front",
+        "scenario": "Motyw: równe, poziome linie w antracycie porządkują front i dają czystą, nowoczesną całość. Piszemy o spokoju i dyscyplinie formy, podkreślamy realizację na wymiar. Kończymy zaproszeniem do kontaktu",
+        "hook": "Spójny front bez przesady",
+        "hookHighlight": "Spójny",
         "spans": [
           {
             "from": 2,
             "to": 2,
-            "text": "Ażurowe — nie zamyka widoku",
-            "highlight": "Ażurowe"
+            "text": "Szerokie lamele uspokajają rytm",
+            "highlight": "rytm"
           },
           {
             "from": 3,
             "to": 3,
-            "text": "Meander dodaje spokojnej ozdoby",
-            "highlight": "Meander"
+            "text": "Grafit robi porządek",
+            "highlight": "Grafit"
           },
           {
             "from": 4,
             "to": 4,
-            "text": "Brama dwuskrzydłowa w tym wzorze",
-            "highlight": "Brama dwuskrzydłowa"
+            "text": "Robimy na wymiar, pod Twój front",
+            "highlight": "na wymiar"
           },
           {
             "from": 5,
             "to": 5,
-            "text": "Chcesz podobny efekt u siebie? Daj znać!",
-            "highlight": "Daj znać"
+            "text": "Podoba Ci się taki porządek? Odezwij się!",
+            "highlight": "Odezwij się!"
           }
         ],
-        "cover": "Grafit i lekkość",
+        "cover": "Spójny nowoczesny front",
         "description": {
-          "firstLine": "Ciemny grafit bez ciężaru — ażurowa palisada z klasycznym meandrem",
-          "body": "Nowoczesne ogrodzenie palisadowe w kolorze grafit/antracyt.\n\nAżurowa forma nie zamyka widoku, a grecki meander dodaje dyskretnej ozdoby.\n\nBrama dwuskrzydłowa i furtka, wszystko na wymiar.\n\nOd projektu po montaż. Stal ocynkowana + malowanie proszkowe.",
+          "firstLine": "Poziome linie, jeden spokojny front — bez zbędnych ozdobników",
+          "body": "Gęsty rytm żaluzjowych lameli i antracyt nadają nowoczesny charakter i porządek na całej linii ogrodzenia.\n\nMurowane słupki i podmurówka w nowoczesnym stylu dopełniają całość. Wykonujemy na wymiar — dopasujemy do Twojej posesji 📐\n\nModel: projekt → produkcja → montaż. Montaż w całej Polsce, realizacja nawet w 3–4 tygodnie 🧰⏱️",
           "hashtags": [
+            "ogrodzenielamelowe",
             "ogrodzenienowoczesne",
-            "ogrodzeniepalisadowe",
-            "bramadwuskrzydłowa",
-            "ogrodzeniedodomu"
+            "furtka",
+            "ogrodzeniedonowoczesnegodomu"
           ]
         },
         "missing": [],
-        "problems": [
-          "ostatni napis \"Chcesz podobny efekt u siebie? Daj znać!\" ma zapraszać do kontaktu, w stylu „Też chcesz takie ogrodzenie? Skontaktuj się z nami!”"
-        ]
+        "problems": []
+      },
+      {
+        "angle": "Balans półpełne",
+        "scenario": "Motyw: półpełne żaluzje chronią przed wzrokiem, ale nie zamykają frontu. Pokazujemy balans prywatności i lekkości, podkreślamy nowoczesny grafit i spójność ze słupkami. Kończymy zaproszeniem do kontaktu",
+        "hook": "Chroni, ale nie zamyka",
+        "hookHighlight": "Chroni",
+        "spans": [
+          {
+            "from": 2,
+            "to": 2,
+            "text": "Żaluzjowe profile filtrują widok",
+            "highlight": "widok"
+          },
+          {
+            "from": 3,
+            "to": 3,
+            "text": "Antracyt trzyma nowoczesny charakter",
+            "highlight": "Antracyt"
+          },
+          {
+            "from": 4,
+            "to": 4,
+            "text": "Murowane słupki — spójny efekt",
+            "highlight": "spójny"
+          },
+          {
+            "from": 5,
+            "to": 5,
+            "text": "Też chcesz taki balans? Skontaktuj się!",
+            "highlight": "Skontaktuj się!"
+          }
+        ],
+        "cover": "Prywatność i lekkość",
+        "description": {
+          "firstLine": "Chroni, ale nie zamyka — półpełne żaluzje w grafitowym antracycie",
+          "body": "Półpełne ogrodzenie żaluzjowe to równowaga: więcej prywatności przy lekkim, nowoczesnym wyglądzie ⚖️\n\nGrafitowy antracyt i poziome lamele budują czysty rytm, a murowane słupki spajają całą linię 🏡\n\nNa wymiar, od projektu po montaż — w całej Polsce. Realizacja już w 3–4 tygodniach 🛠️",
+          "hashtags": [
+            "ogrodzenieżaluzjowe",
+            "ogrodzenielamelowe",
+            "ogrodzenienowoczesne",
+            "ogrodzeniedonowoczesnegodomu"
+          ]
+        },
+        "missing": [],
+        "problems": []
       }
     ],
-    "chosen": 1,
+    "chosen": 2,
     "description": {
-      "firstLine": "Ozdoba, która nie przytłacza — tylko porządkuje linię ogrodzenia",
-      "body": "Palisadowe ogrodzenie ażurowe w antracycie z dwoma pasami greckiego meandra.\n\nRytm pionów + delikatna ozdoba = spokojny, uporządkowany front.\n\nNa wymiar, z bramą dwuskrzydłową i furtką.\n\nProjekt → produkcja → montaż. Cynk + malowanie proszkowe.",
+      "firstLine": "Chroni, ale nie zamyka — półpełne żaluzje w grafitowym antracycie",
+      "body": "Półpełne ogrodzenie żaluzjowe to równowaga: więcej prywatności przy lekkim, nowoczesnym wyglądzie ⚖️\n\nGrafitowy antracyt i poziome lamele budują czysty rytm, a murowane słupki spajają całą linię 🏡\n\nNa wymiar, od projektu po montaż — w całej Polsce. Realizacja już w 3–4 tygodniach 🛠️",
       "hashtags": [
-        "ogrodzenieażurowe",
-        "ogrodzeniepalisadowe",
-        "bramadwuskrzydłowa",
+        "ogrodzenieżaluzjowe",
+        "ogrodzenielamelowe",
+        "ogrodzenienowoczesne",
         "ogrodzeniedonowoczesnegodomu"
       ]
     },
     "missing": [],
     "problems": []
   },
-  "hook": "Geometryczny porządek, zero przesady",
-  "hookHighlight": "porządek",
-  "cover": "Porządek i rytm"
+  "hook": "Chroni, ale nie zamyka",
+  "hookHighlight": "Chroni",
+  "cover": "Prywatność i lekkość"
 }
