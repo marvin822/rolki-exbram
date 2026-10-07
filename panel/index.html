@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EXBRAM — panel rolek</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">e<b>X</b>bram</span>
+          <span class="brand-sub">generator rolek</span>
+        </div>
+
+        <button class="button button-primary" id="new-set-button">
+          + Nowy zestaw
+        </button>
+
+        <nav class="set-list" id="set-list" aria-label="Zestawy"></nav>
+
+        <div class="sidebar-footer">
+          <button class="link-button" id="brief-button">
+            Brief copywritera
+          </button>
+          <div class="job-badge" id="job-badge" hidden></div>
+        </div>
+      </aside>
+
+      <main class="main" id="main">
+        <section class="empty" id="welcome">
+          <h1>Panel rolek EXBRAM</h1>
+          <p>
+            Utwórz zestaw dla jednej realizacji, wrzuć zdjęcia i filmy,
+            kliknij <strong>Generuj</strong> — gotowa rolka, okładka i opis
+            pojawią się w zakładce Wyniki.
+          </p>
+          <ol class="steps-intro">
+            <li>Jeden zestaw = jedna realizacja = jedna rolka</li>
+            <li>Zdjęcia i filmy wrzucasz razem</li>
+            <li>Napisy możesz poprawić i przerenderować bez kosztów AI</li>
+          </ol>
+        </section>
+
+        <section class="set-view" id="set-view" hidden>
+          <header class="set-header">
+            <h1 id="set-title"></h1>
+            <p class="set-meta" id="set-meta"></p>
+          </header>
+
+          <div class="tabs" role="tablist">
+            <button class="tab" role="tab" data-tab="material">Materiał</button>
+            <button class="tab" role="tab" data-tab="run">Generowanie</button>
+            <button class="tab" role="tab" data-tab="results">Wyniki</button>
+            <button class="tab" role="tab" data-tab="copy">Napisy i opis</button>
+          </div>
+
+          <div class="tab-panel" data-panel="material">
+            <label class="dropzone" id="dropzone">
+              <input
+                type="file"
+                id="file-input"
+                multiple
+                accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.webm"
+              />
+              <strong>Przeciągnij tu zdjęcia i filmy</strong>
+              <span>albo kliknij, żeby wybrać pliki (.jpg, .png, .mp4, .mov)</span>
+            </label>
+            <div class="uploads" id="uploads"></div>
+            <div class="media-grid" id="media-grid"></div>
+          </div>
+
+          <div class="tab-panel" data-panel="run">
+            <div class="run-card">
+              <div class="run-actions">
+                <button class="button button-primary" id="run-full">
+                  Generuj rolkę
+                </button>
+                <button class="button" id="run-render">
+                  Tylko render (po edycji napisów)
+                </button>
+              </div>
+              <label class="checkbox">
+                <input type="checkbox" id="stabilize" checked />
+                Stabilizacja filmów
+                <span class="hint">
+                  wyłącz przy testach — oszczędza kilka minut na filmie
+                </span>
+              </label>
+              <p class="hint">
+                <strong>Generuj</strong> — analiza AI, montaż, napisy, render
+                (zdjęcia ok. 5–6 min, z filmem dłużej).
+                <strong>Tylko render</strong> — ten sam montaż i podkład,
+                z poprawionymi napisami, bez kosztów AI.
+              </p>
+            </div>
+
+            <div class="progress" id="progress" hidden>
+              <div class="progress-head">
+                <strong id="progress-title"></strong>
+                <span id="progress-time"></span>
+              </div>
+              <ol class="step-list" id="step-list"></ol>
+              <details class="log" id="log-box">
+                <summary>Szczegóły (log)</summary>
+                <pre id="log"></pre>
+              </details>
+            </div>
+          </div>
+
+          <div class="tab-panel" data-panel="results">
+            <div id="results"></div>
+          </div>
+
+          <div class="tab-panel" data-panel="copy">
+            <div id="copy-editor"></div>
+          </div>
+        </section>
+
+        <section class="brief-view" id="brief-view" hidden>
+          <header class="set-header">
+            <h1>Brief copywritera</h1>
+            <p class="set-meta">
+              Instrukcje, według których AI pisze napisy, okładkę i opis.
+              Zmiany działają od następnej generowanej rolki.
+            </p>
+          </header>
+          <textarea id="brief-text" spellcheck="false"></textarea>
+          <div class="form-actions">
+            <button class="button button-primary" id="brief-save">
+              Zapisz brief
+            </button>
+            <button class="button" id="brief-reload">Odrzuć zmiany</button>
+            <span class="save-status" id="brief-status"></span>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="new-set-dialog">
+      <form method="dialog" id="new-set-form">
+        <h2>Nowy zestaw</h2>
+        <p class="hint">
+          Nazwa realizacji, np. <em>kowalski-brama</em> albo
+          <em>Opoczno palisada</em>.
+        </p>
+        <input
+          type="text"
+          id="new-set-name"
+          maxlength="60"
+          autocomplete="off"
+          required
+        />
+        <p class="form-error" id="new-set-error"></p>
+        <div class="form-actions">
+          <button class="button button-primary" value="create">Utwórz</button>
+          <button class="button" value="cancel" formnovalidate>Anuluj</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" hidden></div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

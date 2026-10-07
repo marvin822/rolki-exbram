@@ -5,7 +5,22 @@ ogrodzeń. AI analizuje zdjęcia i filmy, wybiera ujęcia i układa montaż,
 Remotion składa gotowy plik, a na koniec powstaje opis pod Facebooka
 i Instagram.
 
-## Szybki start
+## Panel w przeglądarce (najprościej)
+
+Dwuklik na **`panel.bat`** — otwiera się panel pod `http://localhost:4321`
+(działa tylko na tym komputerze). W panelu:
+
+- **Nowy zestaw** + przeciągnięcie zdjęć i filmów jednej realizacji,
+- **Generuj rolkę** z podglądem kroków i logu na żywo,
+- **Wyniki**: odtwarzacz, okładka, opis z przyciskiem „Kopiuj”, lista danych
+  do uzupełnienia, poprzednie wersje,
+- **Napisy i opis**: poprawki hooka, plansz, okładki i opisu, potem
+  **Zapisz i renderuj** — nowa wersja bez kosztów AI,
+- **Brief copywritera** — edycja instrukcji dla AI.
+
+Zamknięcie okna `panel.bat` wyłącza panel.
+
+## Szybki start (bez panelu)
 
 1. Utwórz folder zestawu w `public/media/` i wrzuć do niego materiały
    **jednej realizacji** — zdjęcia i filmy razem, bez rozdzielania:
@@ -36,6 +51,7 @@ output/kowalski-brama/okladka-2026-09-06_23-32-45.jpg
 | `make-reel.bat` | zestawy, które nie mają jeszcze folderu w `output/` |
 | `make-reel.bat --wszystko` | wszystkie zestawy od nowa |
 | `node make-reel.mjs "kowalski-brama"` | ten jeden zestaw |
+| `node make-reel.mjs "kowalski-brama" --tylko-render` | ponowny render z zapisanego planu (np. po poprawce napisów), bez AI |
 
 ## Dokumentacja
 

@@ -4,9 +4,11 @@ import path from "path";
 
 import {
   MEDIA_ROOT,
+  VIDEO_EXTENSIONS,
   getOutputDir,
   getWorkDir,
   listLooseFiles,
+  listSetFiles,
   listSets,
 } from "./reel-set.mjs";
 
@@ -37,6 +39,20 @@ const forceAll =
   ) ||
   process.argv.includes(
     "--all",
+  );
+
+/*
+ * --tylko-render: ponowny render zestawu z zapisanego planu
+ * (work/<zestaw>/edit.json), bez analizy AI i bez copywritera.
+ * Służy do poprawienia napisów albo opisu w panelu i szybkiego
+ * przerenderowania — bez kosztów API i z tym samym podkładem.
+ */
+const renderOnly =
+  process.argv.includes(
+    "--tylko-render",
+  ) ||
+  process.argv.includes(
+    "--render-only",
   );
 
 const requestedSets =
@@ -447,6 +463,168 @@ const getScenePath = (
 };
 
 /*
+ * Podkład wybrany dla zestawu — zapamiętany, żeby ponowny render
+ * (--tylko-render) miał tę samą muzykę i te same cięcia w rytm.
+ * Pole recent w music.json w korzeniu zostaje wspólne: pilnuje
+ * rotacji podkładów między zestawami.
+ */
+const MUSIC_FILE = "music.json";
+
+const saveMusicChoice = (
+  setName,
+) => {
+  if (
+    !fs.existsSync(MUSIC_FILE)
+  ) {
+    return;
+  }
+
+  const workDir =
+    getWorkDir(setName);
+
+  fs.mkdirSync(workDir, {
+    recursive: true,
+  });
+
+  fs.copyFileSync(
+    MUSIC_FILE,
+    path.join(
+      workDir,
+      MUSIC_FILE,
+    ),
+  );
+};
+
+const restoreMusicChoice = (
+  setName,
+) => {
+  const saved = path.join(
+    getWorkDir(setName),
+    MUSIC_FILE,
+  );
+
+  if (!fs.existsSync(saved)) {
+    console.log(
+      "Brak zapisanego podkładu dla zestawu — losuję nowy.",
+    );
+
+    return false;
+  }
+
+  const readJsonFile = (
+    file,
+  ) => {
+    try {
+      return JSON.parse(
+        fs.readFileSync(
+          file,
+          "utf8",
+        ),
+      );
+    } catch {
+      return {};
+    }
+  };
+
+  const choice =
+    readJsonFile(saved);
+
+  const current =
+    readJsonFile(MUSIC_FILE);
+
+  fs.writeFileSync(
+    MUSIC_FILE,
+    `${JSON.stringify(
+      {
+        ...choice,
+        recent:
+          current.recent ??
+          choice.recent ??
+          [],
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+
+  console.log(
+    `Podkład jak poprzednio: ${choice.file ?? "bez muzyki"}`,
+  );
+
+  return true;
+};
+
+/*
+ * Kroki trybu --tylko-render. Normalizacja filmów czyści
+ * public/processed przy każdym zestawie, więc puszczamy ją tylko
+ * wtedy, gdy brakuje tam filmów tego zestawu (inny zestaw był
+ * przerabiany w międzyczasie).
+ */
+const getRenderOnlySteps = (
+  setName,
+) => {
+  const videos =
+    listSetFiles(
+      VIDEO_EXTENSIONS,
+      setName,
+    );
+
+  const processedMissing =
+    videos.some(
+      (file) =>
+        !fs.existsSync(
+          path.join(
+            "./public",
+            "processed",
+            `${path.basename(
+              file,
+              path.extname(file),
+            )}.mp4`,
+          ),
+        ),
+    );
+
+  const renderSteps = [];
+
+  if (processedMissing) {
+    renderSteps.push(
+      steps.find(
+        (step) =>
+          step.args[0] ===
+          "normalize-videos.mjs",
+      ),
+    );
+  }
+
+  renderSteps.push(
+    steps.find(
+      (step) =>
+        step.args[0] ===
+        "measure-grade.mjs",
+    ),
+  );
+
+  renderSteps.push({
+    name: "Podkład muzyczny",
+    run: () => {
+      if (
+        !restoreMusicChoice(
+          setName,
+        )
+      ) {
+        runNode(
+          ["select-music.mjs"],
+          setName,
+        );
+      }
+    },
+  });
+
+  return renderSteps;
+};
+
+/*
  * Jeden zestaw = jedna rolka. Zwraca opis wyniku zamiast kończyć
  * proces, bo w trybie wsadowym felerny zestaw nie może zabić reszty.
  */
@@ -459,10 +637,23 @@ const processSet = async (
 
   restoreState(setName);
 
-  for (const step of steps) {
+  const setSteps =
+    renderOnly
+      ? getRenderOnlySteps(
+          setName,
+        )
+      : steps;
+
+  for (const step of setSteps) {
     banner(
       `${setName} — ${step.name}`,
     );
+
+    if (step.run) {
+      step.run();
+
+      continue;
+    }
 
     const result = runNode(
       step.args,
@@ -479,6 +670,10 @@ const processSet = async (
   }
 
   saveState(setName);
+
+  if (!renderOnly) {
+    saveMusicChoice(setName);
+  }
 
   if (
     !fs.existsSync(

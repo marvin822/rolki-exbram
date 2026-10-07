@@ -32,6 +32,28 @@ Bez argumentów przerabiane są **tylko zestawy bez folderu w `output/`**. Powt�
 nie jest darmowa — cache ma wyłącznie analiza zdjęć, a analiza filmów, opis,
 stabilizacja i render lecą od nowa.
 
+### Panel w przeglądarce
+
+`panel.bat` uruchamia `panel/server.mjs` — lokalny serwer bez zależności
+(sam Node), słuchający wyłącznie na `127.0.0.1:4321` i odrzucający zapytania
+z innym nagłówkiem Host. Panel tworzy zestawy, przyjmuje pliki (strumieniowo,
+przez plik tymczasowy, tylko zdjęcia i filmy), uruchamia `make-reel.mjs`
+dokładnie jak `.bat` i przesyła kroki oraz log na żywo (Server-Sent Events).
+Jednocześnie działa jedno zadanie — kroki dzielą pliki stanu w korzeniu.
+
+Edytor napisów zmienia w `work/<zestaw>/edit.json` WYŁĄCZNIE teksty (hook,
+plansze, wyróżnienia, okładka, opis) — kolejność scen, pliki i czasy zostają
+z planu. Potem `--tylko-render`.
+
+### Tryb --tylko-render
+
+`node make-reel.mjs "<zestaw>" --tylko-render` renderuje rolkę z zapisanego
+planu bez analizy AI i bez copywritera: przywraca stan zestawu, normalizuje
+filmy tylko wtedy, gdy w `public/processed` brakuje filmów tego zestawu,
+mierzy korektę kolorów i bierze **ten sam podkład** co poprzednio
+(`work/<zestaw>/music.json`, zapisywany po każdym pełnym przebiegu) — więc
+cięcia w rytm się nie zmieniają. Opis składa się z tekstów zapisanych w planie.
+
 ## 2. Materiały wejściowe
 
 **Zestaw = podfolder `public/media/` = jedna realizacja = jedna rolka.**
