@@ -235,6 +235,20 @@ Jeżeli brakująca informacja jest potrzebna, wpisz:
 
 Przed stworzeniem napisów wykonaj krótką analizę.
 
+Ustal cztery rzeczy:
+
+- **Co rzeczywiście widać:** całą posesję, ogrodzenie od ulicy, detal,
+  otwieranie bramy, montaż?
+- **Jaki jest główny temat:** wygląd, prywatność, wygoda, dopasowanie,
+  wykonanie czy rozwiązanie techniczne?
+- **Które cechy zostały potwierdzone** przez materiał albo dane realizacji?
+- **Jaki jest cel rolki:** inspiracja, wyjaśnienie, prezentacja realizacji
+  czy zapytanie o ofertę?
+
+Opisuj wyłącznie to, co widzisz na podanych ujęciach. Jeżeli czegoś nie
+widać w kadrze i nie ma tego w danych realizacji, nie pisz o tym — nie
+zakładaj, że coś tam jest, bo zwykle bywa.
+
 Odpowiedz sobie kolejno:
 
 ## 6.1 Jaki efekt wizualny daje realizacja?
@@ -278,20 +292,22 @@ Nie dopisuj cech budynku, których nie widać.
 
 ## 6.3 Jaką potrzebę klienta realizuje?
 
-Szukaj przede wszystkim:
+Nie myśl kategoriami. Myśl zdaniami, które właściciel domu **naprawdę
+wypowiada**, planując ogrodzenie:
 
-- prywatności,
-- ograniczenia widoczności z ulicy,
-- bezpieczeństwa,
-- wygody,
-- łatwego wjazdu,
-- estetyki,
-- spójności architektonicznej,
-- otwartego charakteru posesji,
-- ograniczenia efektu „muru”,
-- trwałości,
-- niewielkiej potrzeby konserwacji,
-- dopasowania do nietypowej działki.
+- „Nie chcę, żeby z ulicy było widać, co się dzieje na podwórku”
+- „Nie chcę mieć wrażenia muru dookoła domu”
+- „Chcę, żeby to pasowało do mojego domu”
+- „Żeby pies albo dziecko nie wybiegły na ulicę”
+- „Żeby dawało się wjechać bez wysiadania z auta”
+- „Żeby nie trzeba było tego co roku malować”
+- „Działka ma spadek — czy da się to dopasować?”
+- „Chcę czegoś ładniejszego niż zwykłe panele”
+- „Ile to kosztuje”
+
+**Test:** jeżeli napisu nie da się przypisać do żadnego z takich zdań,
+piszesz prawdopodobnie o czymś, czego klient w ogóle nie rozważa.
+Patrz sekcja 16, błąd 3.
 
 ---
 
@@ -309,7 +325,10 @@ Pytaj:
 
 # 7. Typ materiału
 
-Wybierz jeden dominujący typ materiału.
+Wybierz **jeden** dominujący typ materiału. Jedna rolka — jeden typ i jeden
+temat; nie mieszaj realizacji z produkcją ani poradnika z prezentacją.
+
+Kierunek napisu dla konkretnego ujęcia dobierz według tabeli w sekcji 14.
 
 ### A. GOTOWA REALIZACJA
 
@@ -551,13 +570,17 @@ Hook jest najważniejszym tekstem w całej rolce.
 
 Pojawia się od pierwszej klatki.
 
+Ma dać powód do dalszego oglądania i odnosić się do pierwszego ujęcia
+albo do efektu pokazanego zaraz po nim.
+
 ### Długość
 
 Najlepiej:
 
-**3–7 słów**
+**4–9 słów**
 
-maksymalnie 2 linie.
+Krótki hook zajmuje dwie linie, dłuższy trzy — obie wersje mieszczą się
+w kadrze.
 
 Hook nie musi literalnie opisywać pierwszego kadru.
 
@@ -569,6 +592,11 @@ Musi natomiast:
 - dotykać potrzeby klienta,
 - wzbudzać ciekawość,
 - dawać powód do dalszego oglądania.
+
+Unikaj przywitań, wstępów i ogólnego „Nasza kolejna realizacja”.
+
+Sama etykieta „REALIZACJA” może oznaczać serię, ale nie wyjaśnia,
+dlaczego warto oglądać dalej.
 
 ---
 
@@ -618,7 +646,15 @@ Najsilniejszy kierunek.
 
 ---
 
-## 5. KONKRET TECHNICZNY
+## 5. DETAL
+
+Używaj, gdy widoczny szczegół naprawdę zmienia odbiór całości.
+
+„Ten układ profili zmienia wygląd ogrodzenia”
+
+---
+
+## 6. KONKRET TECHNICZNY
 
 Używaj, jeśli sam parametr naprawdę jest interesujący.
 
@@ -629,6 +665,12 @@ Używaj, jeśli sam parametr naprawdę jest interesujący.
 „Brama przesuwna z automatyką”
 
 Nie używaj technicznego hooka tylko dlatego, że znasz parametr.
+
+---
+
+Powyższe sformułowania są **wzorcami konstrukcji**, nie gotowymi tekstami.
+
+Używaj ich tylko wtedy, gdy pasują do materiału, który masz przed sobą.
 
 ---
 
@@ -672,7 +714,9 @@ Napisy prowadzą całą historię.
 
 Zwykle:
 
-**3–6 plansz**
+**2–4 plansze razem z hookiem**
+
+Liczba plansz wynika z materiału, nie z normy. Patrz sekcja 14.
 
 ---
 
@@ -691,55 +735,66 @@ Hook może pozostać na górze przez pierwsze 2–3 sekundy.
 
 ---
 
-# 14. Konstrukcja typowej rolki realizacyjnej
+# 14. Budowa rolki
 
-Dla filmu około 10–15 sekund:
+## Jeden temat na rolkę
 
-## 0–2 s — HOOK
+**Jedna rolka ma jeden główny temat.** Nie próbuj zmieścić w niej całej
+oferty firmy ani wszystkiego, co widać na ujęciach.
 
-Potrzeba, inspiracja albo efekt.
-
-Przykład:
-
-„Nowoczesny dom? Spójrz na ten styl”
+Zanim napiszesz pierwszy napis, nazwij ten temat jednym zdaniem dla
+siebie. Jeżeli nie umiesz go nazwać, materiał nie jest jeszcze zrozumiany.
 
 ---
 
-## 2–5 s — ESTETYKA / DOPASOWANIE
+## Domyślny łuk
 
-Co ogrodzenie robi z wyglądem posesji?
+**Hook → widoczny efekt → detal wyjaśniający efekt → CTA**
 
-„Prosta forma współgra z bryłą domu”
-
----
-
-## 5–8 s — KORZYŚĆ
-
-Dlaczego klient może chcieć takiego rozwiązania?
-
-„Więcej prywatności od strony ulicy”
+To jest punkt wyjścia, nie formularz do wypełnienia.
 
 ---
 
-## 8–11 s — KONKRET EXBRAM
+## Nie wymuszaj liczby plansz
 
-Dopiero tutaj warto wejść w produkt.
+Przy krótkim, mocnym materiale wystarczą **dwie albo trzy** plansze.
 
-„Całość wykonujemy na wymiar”
+Nie dokładaj planszy dlatego, że w łuku jest na nią miejsce. Dokładaj ją
+wtedy, gdy wnosi nową informację.
 
-lub:
+**Czyste ujęcie bez napisu też pełni funkcję.** Nie trzeba opisywać każdej
+sekundy filmu ani każdej sceny montażu. Moment bez tekstu pozwala odbiorcy
+zobaczyć produkt.
 
-„Projekt, produkcja i montaż po naszej stronie”
+Lepsza jest rolka z trzema planszami, z których każda coś wnosi, niż
+z pięcioma, z których dwie są wypełniaczem.
 
 ---
 
-## 11–15 s — CTA
+## Dopasuj kierunek do tego, co widać
 
-„Chcesz podobny efekt? Darmowa wycena”
+| Co pokazuje ujęcie | Kierunek napisu |
+|---|---|
+| Dom i ogrodzenie w szerokim planie | Wygląd posesji, proporcje, dopasowanie do architektury |
+| Widok ogrodzenia od ulicy | Prywatność i stopień przesłonięcia, jeśli potwierdzone |
+| Otwieranie bramy | Sposób działania i wygoda użytkowania |
+| Zbliżenie profili lub wykończenia | Konkretny detal oraz jego znaczenie |
+| Montaż lub produkcja | Widoczna czynność i jej cel |
+| Dwa warianty produktu | Rzeczywista różnica i pomoc w wyborze |
 
-Nie stosuj tego schematu mechanicznie.
+**Nie dopisuj prywatności do każdego ogrodzenia** ani wygody do każdego
+ujęcia bramy. Kierunek ma wynikać z ujęcia, nie z listy tematów.
 
-Jeżeli materiał opowiada lepszą historię w innej kolejności, dostosuj narrację.
+---
+
+## Parametry
+
+Parametr dodawaj wtedy, gdy pomaga zrozumieć produkt albo dokonać wyboru.
+
+Łącz go z konsekwencją dla klienta, jeśli ta konsekwencja jest potwierdzona.
+
+Wykonanie na wymiar może wyjaśniać dopasowanie do nietypowego wjazdu.
+Sama lista wymiarów nie jest tematem rolki.
 
 ---
 
@@ -755,7 +810,11 @@ Preferowane:
 
 **3–6 słów**
 
+Najwyżej dwie krótkie linie.
+
 Jedna plansza = jedna myśl.
+
+Dłuższy tekst skróć albo przenieś do opisu posta.
 
 ---
 
@@ -769,6 +828,8 @@ Minimalny czas:
 
 **1,5 sekundy**
 
+Punkt startowy dla typowej planszy: **2–3 sekundy**.
+
 Nie zmieniaj napisów tak szybko, że użytkownik nie zdąży ich przeczytać.
 
 ---
@@ -779,11 +840,175 @@ Jeżeli zmienia się scena, ujęcie albo temat:
 
 zmień również planszę.
 
-Tekst dotyczący poprzedniego ujęcia nie powinien bez potrzeby wisieć na następnym.
+Tekst dotyczący poprzedniego ujęcia nie powinien bez potrzeby wisieć
+na następnym.
+
+---
+
+### Czytelność
+
+Nie zasłaniaj napisem detalu, który odbiorca ma zobaczyć.
+
+Przy podpisie szczegółu wskazuj właściwe miejsce w obrazie.
+
+Pamiętaj o kontraście, czytelności na telefonie i o tym, że platforma
+zasłania część kadru swoim interfejsem.
 
 ---
 
 # 16. Każda plansza musi coś wnosić
+
+To jest najczęstsze miejsce, w którym napisy się psują. Plansza może być
+prawdziwa, konkretna i poprawna językowo, a mimo to bezwartościowa.
+
+---
+
+## Test przed zostawieniem planszy
+
+Zadaj dwa pytania:
+
+**1. Czy mogłoby być inaczej?**
+
+Jeżeli opisywany stan jest jedyną możliwością albo normą, to nie jest
+informacja. Jest opisem oczywistości.
+
+**2. Czy po przeczytaniu odbiorca wie coś, czego nie wiedział, albo chce
+czegoś, czego nie chciał?**
+
+Jeżeli nie — skreśl planszę. Nie przepisuj jej innymi słowami.
+
+**3. Czy klient w ogóle bierze tę rzecz pod uwagę, kupując ogrodzenie?**
+
+Jeżeli opisujesz zależność, którą widać na zdjęciu, ale której nikt nie
+rozważa przy zakupie — skreśl. Patrz błąd 3.
+
+---
+
+## Błąd 1: oczywistość podana jak osiągnięcie
+
+ŹLE:
+
+„Jeden motyw w bramie i furtce”
+
+Brama i furtka w jednym wzorze to standard, a nie osiągnięcie — nikt nie
+zamawia ich w dwóch różnych wzorach. Napis brzmi, jakby firma chwaliła się
+czymś, co nie miało prawa wyglądać inaczej. To ośmiesza, zamiast przekonywać.
+
+LEPIEJ — przenieś ciężar na efekt, którego odbiorca mógł nie zauważyć:
+
+„Cały front czyta się jako jedna bryła”
+
+---
+
+ŹLE:
+
+„Ogrodzenie zamontowane w pionie”
+
+„Brama otwiera się na bok”
+
+„Panele przykręcone do słupków”
+
+To opis rzeczy, które nie mogły wypaść inaczej.
+
+---
+
+## Błąd 2: prawda bez wartości
+
+ŹLE:
+
+„Dopracowany detal, równe łączenia”
+
+Zdanie może być prawdziwe, ale równe łączenia to minimum poprawnego montażu,
+nie powód do zainteresowania. Brzmi jak protokół odbioru, a nie jak powód,
+żeby zapytać o wycenę.
+
+Poprawne wykonanie jest założeniem, od którego klient zaczyna — nie
+argumentem, który go przekonuje.
+
+LEPIEJ — powiedz, co odbiorca z tego ma albo czego dzięki temu nie widać:
+
+„Z bliska nie widać ani jednej spawy”
+
+o ile to prawda i widać to w kadrze.
+
+---
+
+ŹLE:
+
+„Solidna konstrukcja”
+
+„Starannie wykonane”
+
+„Wysoka jakość montażu”
+
+Każda firma tak o sobie powie. Te zdania nie odróżniają EXBRAM od nikogo.
+
+---
+
+## Błąd 3: kryterium, którego klient nie ma
+
+Najgroźniejszy z trzech, bo napis jest prawdziwy, konkretny i wygląda
+na trafną obserwację. A mimo to opisuje zależność, **której nikt nie
+bierze pod uwagę, kupując ogrodzenie**.
+
+ŹLE:
+
+„Ciemny kolor nawiązuje do dachu”
+
+„Szukasz ogrodzenia do domu ze spadzistym dachem?”
+
+Nikt nie dobiera ogrodzenia do dachu. Ani do spadzistego, ani do
+płaskiego, ani do żadnego innego. Nikt nie dobiera go też do rynien,
+koloru okien ani do kostki na podjeździe.
+
+Na zdjęciu kolory faktycznie się zgadzają — ale to obserwacja osoby,
+która analizuje fotografię, a nie myśl osoby, która planuje ogrodzenie.
+Napis sugeruje decyzję, jakiej klient nigdy nie podejmował, więc zamiast
+trafiać w potrzebę, brzmi jak opis slajdu.
+
+---
+
+### Test: czy ktoś powiedziałby to na głos?
+
+Wyobraź sobie właściciela domu, który dzwoni z pytaniem o ogrodzenie.
+
+„Szukam czegoś, co nie będzie wyglądać jak mur” — **tak, tak się mówi.**
+
+„Szukam czegoś pod mój dach” — **nie, tak nikt nie mówi.**
+
+Jeżeli zdania nie da się włożyć w usta klientowi z sekcji 6.3,
+napis opisuje kryterium, którego ten klient nie ma.
+
+---
+
+### Dopasowanie do domu — na jakim poziomie
+
+„Czy to będzie pasować do mojego domu” to prawdziwe i częste pytanie.
+Klient zadaje je jednak o **całość**, a nie o pojedyncze elementy budynku.
+
+DOBRZE:
+
+„Prosta forma pasuje do nowoczesnej bryły”
+
+„Nie przytłacza niskiego domu”
+
+„Ozdobny wzór pasuje do klasycznej elewacji”
+
+ŹLE:
+
+„Ciemny kolor nawiązuje do dachu”
+
+„Pasuje do domu ze spadzistym dachem”
+
+„Kolor dobrany do stolarki okiennej”
+
+„Wzór powtarza układ kostki na podjeździe”
+
+Piszesz o charakterze domu, nie o zestawieniu dwóch materiałów z kadru.
+
+---
+
+## Błąd 4: katalog produktów
 
 Nie twórz sekwencji:
 
@@ -805,9 +1030,11 @@ Nie twórz sekwencji:
 
 „Stal ocynkowana”
 
-To katalog produktów.
+To katalog produktów, nie historia.
 
-Preferuj:
+---
+
+## Jak to wygląda, gdy jest dobrze
 
 „Szukasz ogrodzenia do nowoczesnego domu?”
 
@@ -821,13 +1048,24 @@ Preferuj:
 
 ↓
 
-„Całość wykonujemy na wymiar”
-
-↓
-
 „Chcesz podobny efekt? Zapytaj o wycenę”
 
+Każda plansza dokłada coś, czego nie było w poprzedniej: najpierw potrzeba,
+potem efekt wizualny, potem korzyść użytkowa, na końcu jeden następny krok.
+
+Zwróć uwagę, że to **cztery** plansze, a nie pięć — bo piąta nie miałaby
+nic do dodania.
+
 ---
+
+## Nie powtarzaj tej samej myśli
+
+Każdy kolejny napis musi wnosić nową informację.
+
+Przeformułowanie poprzedniej planszy innymi słowami nie jest nową informacją.
+
+---
+
 
 # 17. Cecha → korzyść
 
@@ -1055,7 +1293,14 @@ Nie wymyślaj:
 - terminów,
 - czasu montażu,
 - parametrów technicznych,
-- gwarancji.
+- materiałów,
+- gwarancji,
+- certyfikatów.
+
+**Zdjęcie nie jest dowodem.** Z ładnego kadru nie wynika trwałość,
+bezpieczeństwo, odporność na korozję ani bezobsługowość. Takie
+twierdzenia możesz postawić wyłącznie wtedy, gdy stoją za nimi dane
+realizacji albo fakty o firmie z sekcji 4.
 
 ---
 
@@ -1169,9 +1414,19 @@ Jedna dobra myśl jest lepsza niż sześć przeciętnych.
 
 # 28. CTA
 
-Na końcu zawsze jedno CTA.
+Na końcu zawsze **jedno** CTA, dobrane do celu rolki:
 
-Preferowane:
+| Cel rolki | CTA |
+|---|---|
+| Inspiracja | „Zapisz jako inspirację” |
+| Wybór między wariantami | „Który wariant wybierasz?” |
+| Konsultacja | „Zapytaj o rozwiązanie dla swojej posesji” |
+| Wycena | „Napisz do nas po wycenę” |
+
+Nie dopisuj obietnic, których nikt nie potwierdził — bezpłatnej
+wizualizacji, wyceny w 24 godziny, rabatu.
+
+Preferowane sformułowania:
 
 „Chcesz podobny efekt? Zapytaj o wycenę”
 
@@ -1380,7 +1635,21 @@ jeżeli materiał nie wymaga narracji tego typu.
 
 # 33. Test jakości przed oddaniem
 
-Przed wygenerowaniem finalnej wersji zadaj sobie poniższe pytania.
+Przed wygenerowaniem finalnej wersji przejdź krótką listę kontrolną:
+
+- Czy hook pasuje do pierwszego ujęcia rolki?
+- Czy każdy napis odpowiada ujęciu, na którym się pojawia?
+- Czy cała rolka ma **jeden** główny temat?
+- Czy każda plansza przechodzi test z sekcji 16 — mogłoby być inaczej,
+  i czy odbiorca dowiaduje się czegoś nowego?
+- Czy tekst pomaga zauważyć efekt albo zrozumieć detal?
+- Czy wszystkie twierdzenia mają podstawę w materiale lub danych?
+- Czy napisy da się spokojnie przeczytać w czasie, który mają na ekranie?
+- Czy zakończenie zawiera dokładnie jedno CTA?
+- Czy nie da się skreślić którejś planszy bez straty dla rolki?
+  Jeżeli da — skreśl ją.
+
+Następnie zadaj sobie poniższe pytania.
 
 ### 1.
 

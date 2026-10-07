@@ -38,7 +38,57 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const COPY_MODEL = "gpt-5";
+/*
+ * Model copywritera. Da sie podmienic bez ruszania kodu:
+ * REEL_COPY_MODEL=gpt-6.1-sol node write-copy.mjs
+ */
+const COPY_MODEL = process.env.REEL_COPY_MODEL || "gpt-5";
+
+/*
+ * Zuzycie tokenow sumowane przez caly krok - copywriter potrafi
+ * wykonac kilka prob (MAX_ATTEMPTS), wiec pojedyncze wywolanie
+ * niewiele mowi o koszcie.
+ */
+const usageTotal = {
+  calls: 0,
+  input: 0,
+  cachedInput: 0,
+  output: 0,
+  reasoning: 0,
+};
+
+const recordUsage = (usage) => {
+  if (!usage) {
+    return;
+  }
+
+  usageTotal.calls += 1;
+  usageTotal.input += usage.input_tokens ?? 0;
+  usageTotal.cachedInput += usage.input_tokens_details?.cached_tokens ?? 0;
+  usageTotal.output += usage.output_tokens ?? 0;
+  usageTotal.reasoning += usage.output_tokens_details?.reasoning_tokens ?? 0;
+};
+
+const reportUsage = () => {
+  if (usageTotal.calls === 0) {
+    return;
+  }
+
+  const n = (value) => value.toLocaleString("pl-PL");
+
+  console.log(
+    `\nTokeny (${COPY_MODEL}, ${usageTotal.calls} wywolan): ` +
+      `wejscie ${n(usageTotal.input)}` +
+      (usageTotal.cachedInput > 0
+        ? ` (w tym ${n(usageTotal.cachedInput)} z cache)`
+        : "") +
+      `, wyjscie ${n(usageTotal.output)}` +
+      (usageTotal.reasoning > 0
+        ? ` (w tym ${n(usageTotal.reasoning)} rozumowania)`
+        : "") +
+      `, razem ${n(usageTotal.input + usageTotal.output)}`,
+  );
+};
 
 const ROOT = process.cwd();
 
@@ -67,12 +117,21 @@ const HOOK_HISTORY_CHECK = 12;
  * Limity z briefu (sekcje 10, 15, 31) i z rozmiaru fontu
  * w Composition.tsx (dwie linie tekstu).
  */
-const HOOK_WORDS = [3, 7];
+const HOOK_WORDS = [4, 9];
 
-const HOOK_MAX_CHARS = 42;
+/*
+ * Sprawdzone renderem: przy 66 px w jednej linii mieści się około
+ * 20 znaków, więc dwie linie to ~42 znaki, a dziewięciowyrazowy hook
+ * (~57 znaków) zajmuje TRZY linie. Trzy linie wyglądają dobrze —
+ * mieszczą się w gradiencie i nie zasłaniają ogrodzenia — więc limit
+ * znaków idzie za liczbą słów z briefu, a nie odwrotnie.
+ */
+const HOOK_MAX_CHARS = 60;
 
 const MESSAGE_MAX_WORDS = 8;
 
+// Plansze lecą 54 px: dwie linie to ~45 znaków, typowe 3-6 słów mieści
+// się bez problemu.
 const MESSAGE_MAX_CHARS = 56;
 
 /*
@@ -83,7 +142,13 @@ const MESSAGE_MAX_CHARS = 56;
  */
 const HARD_MAX_CHARS = 80;
 
-const MESSAGES_RANGE = [2, 5];
+/*
+ * Liczba plansz PO hooku. Brief (sekcja 13) mówi o 2-4 planszach razem
+ * z hookiem i wprost pozwala zostawić ujęcie bez napisu, więc dolna
+ * granica to jedna. Wcześniejsze minimum 2 wymuszało co najmniej cztery
+ * plansze w rolce i to właśnie produkowało wypełniacze.
+ */
+const MESSAGES_RANGE = [1, 3];
 
 const MAX_SCENES_PER_MESSAGE = 3;
 
@@ -461,8 +526,11 @@ Co z tego wynika dla napisów:
    (font ich nie ma). W opisie też bez placeholderów — braki idą do
    "missing" i trafią pod opis jako lista do uzupełnienia.
 
-4. Klient dobiera ogrodzenie do swojego domu — możesz pisać, do jakiego
-   domu pasuje ten styl, jeśli wynika to z obrazów.
+4. Możesz pisać, do jakiego DOMU pasuje ten styl — ale na poziomie bryły
+   i charakteru ("pasuje do nowoczesnej bryły", "nie przytłacza niskiego
+   domu"), nigdy przez zestawienie z pojedynczym elementem budynku.
+   Nikt nie dobiera ogrodzenia do dachu, rynien, okien ani kostki na
+   podjeździe — patrz brief, sekcja 16, błąd 3.
 
 5. Przygotuj ${VARIANT_COUNT} WERSJE napisów, każdą pod INNYM kątem z sekcji 8
    briefu (np. prywatność / dopasowanie do architektury / inspiracja),
@@ -572,6 +640,8 @@ const requestCopy = async (content) => {
       },
     },
   });
+
+  recordUsage(response.usage);
 
   if (!response.output_text) {
     throw new Error("AI nie zwróciło napisów.");
@@ -1179,6 +1249,8 @@ const main = async () => {
   }
 
   console.log(`\nZapisano napisy w ${EDIT_FILE}`);
+
+  reportUsage();
 };
 
 main().catch((error) => {

@@ -1,7 +1,15 @@
 {
-  "file": "fresh-start.mp3",
+  "file": "Crystal Coast - Take our Time.mp3",
   "recent": [
-    "fresh-start.mp3",
-    "ciche-godziny.mp3"
-  ]
+    "Crystal Coast - Take our Time.mp3",
+    "Captain Joz - Stunts Cheer.mp3",
+    "Funky Giraffe - Are You Ready for Me Baby.mp3",
+    "ciche-godziny.mp3",
+    "CustomMelody - Hit the Nerve.mp3"
+  ],
+  "beat": {
+    "bpm": 113.34,
+    "offset": 0.139,
+    "confidence": 4
+  }
 }
