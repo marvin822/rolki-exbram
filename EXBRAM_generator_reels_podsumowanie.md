@@ -191,11 +191,19 @@ droga i niebo liczą się jako `deadSpace`, nawet gdy ładnie wyglądają.
 - Gdy większość zdjęć ma niski `productProminence`, a są dobre klipy — rolka
   opiera się na wideo.
 - **Napisy** układa planer razem z montażem: `hook` (3–7 słów, maks. 42 znaki)
-  na pierwszą scenę i `caption` (2–4 słowa, maks. 30 znaków) dla 2–4 kolejnych
-  scen. Tylko to, co potwierdza pole `subject` — bez liczb, kodów RAL i nazw
-  materiałów. Limity pilnuje też kod (`cleanOverlayText`).
-  Podpisy nazywają cechę METALU (murek, słupki murowane i opis kadru są
-  zakazane), jednoliterowe słowa są sklejane z następnym twardą spacją.
+  na pierwszą scenę i 2–3 **hasła marketingowe** (`caption`, maks. 40 znaków)
+  na resztę rolki. Hasło NIE opisuje kadru („Furtka lamelowa”), tylko mówi, co
+  ogrodzenie daje: prywatność, styl, precyzja, własna produkcja i montaż,
+  zachęta. Jedno hasło trwa przez 2–3 kolejne sceny — planer wpisuje ten sam
+  tekst w każdą z nich. Zakazane: murek, tabliczki, skrzynki, liczby, terminy,
+  gwarancje, superlatywy. Kod przycina długość (`cleanOverlayText`), zostawia
+  najwyżej 3 hasła i każde tylko w jednym ciągłym odcinku
+  (`normalizeCaptionRuns`). Jednoliterowe słowa są sklejane z następnym
+  twardą spacją.
+- **Pamięć haseł:** ostatnie 40 hooków i haseł trafia do
+  `work/text-history.json` (lokalnie, wspólne dla zestawów) i do promptu jako
+  lista zakazana — bez tego model wracał do tych samych sformułowań, a kolejne
+  rolki na profilu wyglądałyby jak szablon. Usunięcie pliku czyści pamięć.
 - **Serie zdjęć:** zdjęcia zrobione w odstępie ≤ 4 s (`takenAt`) to prawie ten
   sam kadr. Kod nie pozwala postawić ich obok siebie — przenosi drugie dalej
   (bez ruszania zakończenia), a gdy się nie da, pomija je.
@@ -218,7 +226,9 @@ droga i niebo liczą się jako `deadSpace`, nawet gdy ładnie wyglądają.
 - **Napisy** stoją u góry pasa z treścią — w strefie bezpiecznej Instagrama
   i Facebooka (górne ~14% i dolne ~35% kadru zasłania interfejs). Hook: biały,
   Montserrat 800, czerwona belka w kolorze logo, przyciemnienie góry kadru.
-  Podpis: ciemna etykieta z czerwoną krawędzią. Rozmyte pasy zostają czyste.
+  Hasła: ciemna etykieta z czerwoną krawędzią w stałym miejscu kadru, osobna
+  warstwa nad scenami — stoi przez całe ujęcia i przejścia, a nie miga przy
+  każdym cięciu. Rozmyte pasy zostają czyste.
 - **Znak wodny** w lewym dolnym rogu pasa — prawą krawędź zajmuje kolumna
   przycisków. Jedna wersja rolki pasuje do obu platform.
 - Plansza końcowa: 3,5 s, logo, „Ogrodzenia, które robią różnicę",

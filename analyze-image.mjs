@@ -70,7 +70,106 @@ const ANALYSIS_SCHEMA_VERSION = 5;
  */
 const HOOK_MAX_CHARS = 42;
 
-const CAPTION_MAX_CHARS = 30;
+const CAPTION_MAX_CHARS = 40;
+
+/*
+ * Najwięcej różnych haseł marketingowych w jednej rolce — więcej
+ * nie da się przeczytać w ~20 s, a każde ma trwać kilka ujęć.
+ */
+const MAX_CAPTION_MESSAGES = 3;
+
+/*
+ * Pamięć haseł z poprzednich rolek.
+ *
+ * Model chętnie wraca do tych samych sformułowań, a na profilu
+ * firmy kolejne rolki z identycznym hookiem wyglądają jak szablon.
+ * Ostatnie hooki i hasła trafiają do promptu jako lista zakazana.
+ * Plik leży w work/ (lokalnie, poza gitem) — wspólny dla zestawów.
+ */
+const TEXT_HISTORY_FILE =
+  path.join(
+    process.cwd(),
+    "work",
+    "text-history.json",
+  );
+
+const TEXT_HISTORY_LIMIT = 40;
+
+const readTextHistory = () => {
+  try {
+    const stored = JSON.parse(
+      fs.readFileSync(
+        TEXT_HISTORY_FILE,
+        "utf8",
+      ),
+    );
+
+    return Array.isArray(stored)
+      ? stored.filter(
+          (item) =>
+            typeof item ===
+            "string",
+        )
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+const formatTextHistory = () => {
+  const history =
+    readTextHistory();
+
+  return history.length > 0
+    ? history
+        .map(
+          (text) =>
+            `- ${text}`,
+        )
+        .join("\n")
+    : "(brak — to pierwsza rolka)";
+};
+
+const rememberTexts = (
+  plan,
+) => {
+  const fresh = [
+    plan.hook,
+    ...plan.scenes.map(
+      (scene) =>
+        scene.caption,
+    ),
+  ].filter(Boolean);
+
+  const merged = [
+    ...new Set([
+      ...fresh,
+      ...readTextHistory(),
+    ]),
+  ].slice(
+    0,
+    TEXT_HISTORY_LIMIT,
+  );
+
+  fs.mkdirSync(
+    path.dirname(
+      TEXT_HISTORY_FILE,
+    ),
+    {
+      recursive: true,
+    },
+  );
+
+  fs.writeFileSync(
+    TEXT_HISTORY_FILE,
+    `${JSON.stringify(
+      merged,
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+};
 
 /*
  * Zdjęcia zrobione kilka sekund po sobie to zwykle prawie ten
@@ -232,6 +331,48 @@ const separateBurstShots = (
 
       index -= 1;
     }
+  }
+};
+
+/*
+ * Hasło trwające przez kilka scen to ten sam caption na kolejnych
+ * scenach — Composition.tsx skleja je w jeden napis. Po rozdzieleniu
+ * serii zdjęć scena z hasłem mogła odjechać dalej, więc to samo hasło
+ * pokazałoby się drugi raz. Zostawiamy tylko pierwszy ciągły odcinek
+ * każdego hasła i najwyżej MAX_CAPTION_MESSAGES różnych haseł.
+ */
+const normalizeCaptionRuns = (
+  scenes,
+) => {
+  const used = new Set();
+
+  let previous = "";
+
+  for (const scene of scenes) {
+    let text =
+      scene.caption ?? "";
+
+    const continuesRun =
+      text !== "" &&
+      text === previous;
+
+    if (
+      text &&
+      !continuesRun &&
+      (used.has(text) ||
+        used.size >=
+          MAX_CAPTION_MESSAGES)
+    ) {
+      text = "";
+    }
+
+    if (text) {
+      used.add(text);
+    }
+
+    scene.caption = text;
+
+    previous = text;
   }
 };
 
@@ -1081,25 +1222,45 @@ NAPISY NA EKRANIE (rolki ogląda się głównie bez dźwięku):
   Nie używaj zwrotów "w jednym rytmie", "robi różnicę", "robi
   wrażenie" — są już na planszy końcowej albo powtarzały się
   w poprzednich rolkach.
-- caption — krótki podpis do sceny: 2-4 słowa, maksymalnie
-  ${CAPTION_MAX_CHARS} znaków, bez kropki. Nazywa jedną CECHĘ
-  METALOWEGO PRODUKTU widoczną w tej scenie: rodzaj wypełnienia,
-  typ bramy lub furtki, detal wykonania, akcesorium.
-  Dobre: "Poziome lamele", "Furtka ze skrzynką na listy",
-  "Brama dwuskrzydłowa", "Ukryte zawiasy".
-  Złe: "Murowane słupki", "Podmurówka" (to nie nasz produkt — murek,
-  słupki murowane, kostka i dom NIE są tematem podpisu),
-  "Brama na pierwszym planie", "Przęsło przed domem" (opis kadru
-  albo położenia, a nie cecha produktu).
-  Jeśli w scenie nie ma cechy produktu wartej nazwania — caption "".
-- pierwsza scena ma caption "" (na niej jest hook),
-- podpisy daj 2-4 scenom; pozostałe mają caption "" — napis na każdej
-  scenie męczy, a czysty kadr też jest w porządku,
-- nie powtarzaj w podpisach tej samej informacji,
-- podpisuj WYŁĄCZNIE to, co potwierdza pole subject danego materiału:
-  bez liczb, wymiarów, kodów RAL, nazw materiałów (stal, aluminium)
-  i funkcji (automat, pilot), których analiza nie wymienia wprost,
-- język polski, wielka litera tylko na początku.
+- caption — HASŁA MARKETINGOWE prowadzące widza przez rolkę po hooku.
+  To NIE są podpisy zdjęć. Nie nazywaj tego, co widać w kadrze
+  ("Furtka lamelowa", "Przęsło lamelowe", "Pionowe lamele" są ZŁE —
+  widz sam widzi, że to furtka). Hasło mówi, co ogrodzenie DAJE
+  albo jakie jest: efekt dla domu, prywatność, spokój, bezpieczeństwo,
+  nowoczesny charakter, porządek i precyzja wykonania, dopasowanie
+  do elewacji, trwałość na lata.
+  Firma sama PRODUKUJE i MONTUJE ogrodzenia — możesz się do tego
+  odwołać ("od projektu po montaż", "z własnej produkcji").
+- ułóż 2-3 RÓŻNE hasła na całą rolkę, które razem tworzą krótką
+  historię, np. efekt → korzyść → zachęta. Ostatnie hasło może
+  łagodnie zapowiadać planszę końcową (że widz też może mieć takie
+  ogrodzenie), ale bez telefonu i bez "zadzwoń" — CTA jest na planszy,
+- jedno hasło TRWA PRZEZ KILKA KOLEJNYCH SCEN: wpisz DOKŁADNIE ten sam
+  tekst w caption każdej z nich (zwykle 2-3 sceny, ok. 6-10 s) — dzięki
+  temu widz zdąży przeczytać, a tekst nie miga przy każdym cięciu,
+- pierwsza scena ma caption "" (na niej jest hook); od drugiej sceny
+  hasła powinny pokrywać prawie całą rolkę — najwyżej JEDNA scena
+  z rzędu bez hasła,
+- 3-7 słów, maksymalnie ${CAPTION_MAX_CHARS} znaków, bez kropki
+  i bez wykrzyknika, wielka litera tylko na początku,
+- tematem jest wyłącznie OGRODZENIE (metal: przęsła, brama, furtka,
+  lamele). Nie pisz o tabliczkach, numerach domu, skrzynkach na
+  listy, domofonach, napisach, murku, słupkach murowanych ani o domu
+  jako takim,
+- hasło nie może obiecywać rzeczy, których nie da się sprawdzić:
+  bez liczb, terminów ("w 2 dni"), gwarancji, cen, kodów RAL, nazw
+  materiałów (stal, aluminium) i funkcji (automat, pilot), których
+  analiza nie wymienia wprost; bez superlatyw ("najlepsze",
+  "idealne"),
+- TEMATY do wyboru (same tematy — sformułowanie ułóż sam, pod to,
+  co wyróżnia TĘ realizację): prywatność; dopasowanie do architektury;
+  precyzja wykonania; spójność bramy, furtki i przęseł; własna
+  produkcja i montaż; trwałość; zachęta dla widza,
+- hook i hasła mają brzmieć świeżo — NIE używaj haseł z poprzednich
+  rolek ani ich parafraz (lista niżej).
+
+HASŁA Z POPRZEDNICH ROLEK (nie powtarzaj):
+${formatTextHistory()}
 
 WAŻNE:
 
@@ -1450,6 +1611,10 @@ Zwróć wyłącznie JSON zgodny ze schematem.
    */
   uniqueScenes[0].caption = "";
 
+  normalizeCaptionRuns(
+    uniqueScenes,
+  );
+
   return {
     hook: cleanOverlayText(
       plan.hook,
@@ -1622,6 +1787,8 @@ const main = async () => {
       videos:
         validVideoAnalysis,
     });
+
+  rememberTexts(editPlan);
 
   /*
    * Nazwa zestawu jedzie w planie montażu, bo Remotion importuje

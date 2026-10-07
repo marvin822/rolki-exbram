@@ -69,12 +69,12 @@ type EditPlan = {
 };
 
 /*
- * Napis na scenie: hook na pierwszej, krótki podpis na kilku
- * kolejnych. Treść układa planer (analyze-image.mjs).
+ * Hook — napis pierwszej sceny. Hasła marketingowe z kolejnych scen
+ * są osobną warstwą (MessageLayer), bo trwają przez kilka ujęć.
+ * Treść układa planer (analyze-image.mjs).
  */
 type SceneOverlay = {
   text: string;
-  variant: "hook" | "caption";
 };
 
 type Scene =
@@ -393,29 +393,19 @@ const getProcessedVideoPath = (
 };
 
 /*
- * Napis dla sceny: hook z planu na pierwszej, podpis (caption)
- * na tych, którym planer go dał. Pusty tekst = czysty kadr.
+ * Hook z planu trafia na pierwszą scenę. Pusty tekst = czysty kadr.
  */
 const getSceneOverlay = (
-  scene: EditScene,
   index: number,
 ): SceneOverlay | undefined => {
   const text =
     index === 0
       ? editData.hook?.trim()
-      : scene.caption?.trim();
+      : "";
 
-  if (!text) {
-    return undefined;
-  }
-
-  return {
-    text,
-    variant:
-      index === 0
-        ? "hook"
-        : "caption",
-  };
+  return text
+    ? { text }
+    : undefined;
 };
 
 const plannedScenes: Scene[] =
@@ -433,10 +423,7 @@ const plannedScenes: Scene[] =
         extension === "webm";
 
       const overlay =
-        getSceneOverlay(
-          scene,
-          index,
-        );
+        getSceneOverlay(index);
 
       if (isVideo) {
         return {
@@ -771,7 +758,7 @@ const attachShortWords = (
   );
 };
 
-const SceneText: React.FC<{
+const HookText: React.FC<{
   overlay: SceneOverlay;
   sceneFrames: number;
   isStatic?: boolean;
@@ -783,18 +770,10 @@ const SceneText: React.FC<{
   const frame =
     useCurrentFrame();
 
-  const isHook =
-    overlay.variant === "hook";
-
-  const delay = isHook
-    ? 3
-    : 6;
-
   const enter = isStatic
     ? 1
     : spring({
-        frame:
-          frame - delay,
+        frame: frame - 3,
         fps: FPS,
         durationInFrames: 14,
         config: {
@@ -803,8 +782,8 @@ const SceneText: React.FC<{
       });
 
   /*
-   * Napis znika tuż przed przejściem, żeby dwa napisy nie
-   * przenikały się w trakcie zmiany sceny.
+   * Hook znika tuż przed przejściem, żeby nie przenikał się
+   * z hasłem następnej sceny.
    */
   const exit = isStatic
     ? 1
@@ -829,76 +808,205 @@ const SceneText: React.FC<{
   const offsetY =
     (1 - enter) * 26;
 
-  if (isHook) {
-    const fontSize =
-      overlay.text.length <= 26
-        ? 78
-        : 66;
+  const fontSize =
+    overlay.text.length <= 26
+      ? 78
+      : 66;
 
-    return (
-      <>
+  return (
+    <>
+      <div
+        style={{
+          position:
+            "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "48%",
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0) 100%)",
+          opacity:
+            visibility,
+        }}
+      />
+
+      <div
+        style={{
+          position:
+            "absolute",
+          top: TEXT_INSET,
+          left: TEXT_INSET,
+          right: TEXT_INSET,
+          display: "flex",
+          gap: 26,
+          opacity:
+            visibility,
+          transform: `translateY(${offsetY}px)`,
+        }}
+      >
         <div
           style={{
-            position:
-              "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: "48%",
-            background:
-              "linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0) 100%)",
-            opacity:
-              visibility,
+            width: 10,
+            flexShrink: 0,
+            backgroundColor:
+              BRAND_RED,
+            transform: `scaleY(${enter})`,
+            transformOrigin:
+              "top",
           }}
         />
 
         <div
           style={{
-            position:
-              "absolute",
-            top: TEXT_INSET,
-            left: TEXT_INSET,
-            right: TEXT_INSET,
-            display: "flex",
-            gap: 26,
-            opacity:
-              visibility,
-            transform: `translateY(${offsetY}px)`,
+            fontFamily:
+              FONT_FAMILY,
+            fontWeight: 800,
+            fontSize,
+            lineHeight: 1.12,
+            textWrap:
+              "balance",
+            color: "white",
+            textShadow:
+              HOOK_SHADOW,
           }}
         >
-          <div
-            style={{
-              width: 10,
-              flexShrink: 0,
-              backgroundColor:
-                BRAND_RED,
-              transform: `scaleY(${enter})`,
-              transformOrigin:
-                "top",
-            }}
-          />
-
-          <div
-            style={{
-              fontFamily:
-                FONT_FAMILY,
-              fontWeight: 800,
-              fontSize,
-              lineHeight: 1.12,
-              textWrap:
-                "balance",
-              color: "white",
-              textShadow:
-                HOOK_SHADOW,
-            }}
-          >
-            {attachShortWords(
-              overlay.text,
-            )}
-          </div>
+          {attachShortWords(
+            overlay.text,
+          )}
         </div>
-      </>
+      </div>
+    </>
+  );
+};
+
+/*
+ * Hasła marketingowe.
+ *
+ * Planer wpisuje to samo hasło w caption kilku kolejnych scen —
+ * sklejamy je w jeden odcinek, który leży NAD TransitionSeries,
+ * więc napis stoi przez całe ujęcia i przejścia zamiast migać
+ * przy każdym cięciu.
+ *
+ * Pozycja jest stała w kadrze: tuż pod górną krawędzią pasa 4:5
+ * (tam, gdzie hook). Przy scenie 1:1 wypada nad pasem, na rozmytym
+ * tle — etykieta ma własne tło, więc dalej jest czytelna.
+ */
+type MessageSpan = {
+  text: string;
+  fromFrame: number;
+  toFrame: number;
+  lastIndex: number;
+};
+
+const MESSAGE_TOP =
+  (1920 -
+    CONTENT_HEIGHTS["4:5"]) /
+    2 +
+  TEXT_INSET;
+
+const messageSpans: MessageSpan[] =
+  (() => {
+    const spans: MessageSpan[] =
+      [];
+
+    let startFrame = 0;
+
+    scenes.forEach(
+      (scene, index) => {
+        const frames =
+          durationInFrames(
+            scene.duration,
+          );
+
+        const caption =
+          index === 0
+            ? ""
+            : (editData.scenes[
+                index
+              ]?.caption ?? "").trim();
+
+        const last =
+          spans[
+            spans.length - 1
+          ];
+
+        if (
+          caption &&
+          last &&
+          last.text ===
+            caption &&
+          last.lastIndex ===
+            index - 1
+        ) {
+          last.toFrame =
+            startFrame + frames;
+
+          last.lastIndex = index;
+        } else if (caption) {
+          spans.push({
+            text: caption,
+            fromFrame:
+              startFrame,
+            toFrame:
+              startFrame + frames,
+            lastIndex: index,
+          });
+        }
+
+        startFrame += frames;
+      },
     );
+
+    return spans;
+  })();
+
+const MessageText: React.FC<{
+  span: MessageSpan;
+}> = ({
+  span,
+}) => {
+  const frame =
+    useCurrentFrame();
+
+  /*
+   * Wejście po zakończeniu przejścia do pierwszej sceny odcinka,
+   * wyjście przed przejściem za ostatnią.
+   */
+  const enterStart =
+    span.fromFrame +
+    TRANSITION_DURATION +
+    4;
+
+  const enter = spring({
+    frame:
+      frame - enterStart,
+    fps: FPS,
+    durationInFrames: 16,
+    config: {
+      damping: 200,
+    },
+  });
+
+  const exit = interpolate(
+    frame,
+    [
+      span.toFrame - 9,
+      span.toFrame - 1,
+    ],
+    [1, 0],
+    {
+      extrapolateLeft:
+        "clamp",
+      extrapolateRight:
+        "clamp",
+    },
+  );
+
+  if (
+    frame < enterStart ||
+    frame >= span.toFrame
+  ) {
+    return null;
   }
 
   return (
@@ -906,34 +1014,55 @@ const SceneText: React.FC<{
       style={{
         position:
           "absolute",
-        top: TEXT_INSET,
+        top: MESSAGE_TOP,
         left: TEXT_INSET,
         maxWidth:
           CANVAS_WIDTH -
           2 * TEXT_INSET,
         opacity:
-          visibility,
-        transform: `translateX(${-offsetY}px)`,
+          enter * exit,
+        transform: `translateX(${(enter - 1) * 30}px)`,
         backgroundColor:
-          "rgba(15,15,16,0.66)",
-        borderLeft: `8px solid ${BRAND_RED}`,
+          "rgba(15,15,16,0.72)",
+        borderLeft: `10px solid ${BRAND_RED}`,
         padding:
-          "16px 28px",
+          "20px 32px",
         fontFamily:
           FONT_FAMILY,
-        fontWeight: 700,
-        fontSize: 46,
-        lineHeight: 1.18,
+        fontWeight: 800,
+        fontSize: 54,
+        lineHeight: 1.16,
         textWrap: "balance",
         color: "white",
       }}
     >
       {attachShortWords(
-        overlay.text,
+        span.text,
       )}
     </div>
   );
 };
+
+const MessageLayer: React.FC =
+  () => {
+    return (
+      <AbsoluteFill
+        style={{
+          pointerEvents:
+            "none",
+        }}
+      >
+        {messageSpans.map(
+          (span) => (
+            <MessageText
+              key={`${span.fromFrame}-${span.text}`}
+              span={span}
+            />
+          ),
+        )}
+      </AbsoluteFill>
+    );
+  };
 
 const FramedMedia: React.FC<{
   aspect?: ContentAspect;
@@ -1480,7 +1609,7 @@ const SceneComponent: React.FC<{
 }) => {
   const overlay =
     scene.overlay ? (
-      <SceneText
+      <HookText
         overlay={
           scene.overlay
         }
@@ -1843,6 +1972,8 @@ export const MyComponent: React.FC<Props> =
             <EndCard />
           </TransitionSeries.Sequence>
         </TransitionSeries>
+
+        <MessageLayer />
       </AbsoluteFill>
     );
   };
